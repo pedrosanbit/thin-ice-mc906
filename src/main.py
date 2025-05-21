@@ -33,14 +33,14 @@ while True:
     next_level = game.check_next_level()
     if not next_level: game.check_game_over()
 
-    teclas = pygame.key.get_pressed()
-    if teclas[pygame.K_LEFT]:
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
         game.move_player((-1,0))
-    if teclas[pygame.K_RIGHT]:
+    if keys[pygame.K_RIGHT]:
         game.move_player((1,0))
-    if teclas[pygame.K_UP]:
+    if keys[pygame.K_UP]:
         game.move_player((0,-1))
-    if teclas[pygame.K_DOWN]:
+    if keys[pygame.K_DOWN]:
         game.move_player((0,1))
 
     for i in range(0, GRID_LENGTH):
