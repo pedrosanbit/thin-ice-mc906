@@ -10,6 +10,7 @@ class Map(Enum):
     TELEPORT = 6
     FINISH = 7
     WATER = 8
+    COIN_BAG = 9
 
 color_map = [
     (154, 205, 254),
@@ -20,7 +21,8 @@ color_map = [
     (156, 205, 254),
     (92, 216, 126),
     (255, 206, 207),
-    (0, 79, 191)
+    (0, 79, 191),
+    (133, 17, 45)
 ]
 
 def get_color(index):
