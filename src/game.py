@@ -67,6 +67,7 @@ class Game:
             self.current_tiles += 1
         elif current_tile == Map.THICK_ICE.value:
             self.level.grid[self.player_y][self.player_x] = Map.THIN_ICE.value
+            self.current_tiles += 1
 
         self.player_x = new_x
         self.player_y = new_y

@@ -36,7 +36,7 @@ while True:
     next_level = game.check_next_level()
     if not next_level: game.check_game_over()
 
-    level_text =  font.render(f'LEVEL {game.num_level}', True, TEXT)
+    level_text =  font.render(f'LEVEL {game.num_level + 1}', True, TEXT)
     progress_text = font.render(f'{game.current_tiles} / {game.level.total_tiles}', True, TEXT)
     solved_text = font.render(f'SOLVED {game.solved}', True, TEXT)
     points_text = font.render(f'POINTS {game.current_points}', True, TEXT)
