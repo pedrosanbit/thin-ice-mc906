@@ -532,7 +532,96 @@ levels = [
             Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
             Map.WALL.value, Map.EMPTY.value, Map.EMPTY.value
         ]
-    ], (6, 5), [(2, 10)], [], [], 82)
+    ], (6, 5), [(2, 10)], [], [], 82),
+    Level([
+        [
+            Map.EMPTY.value, Map.EMPTY.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.WALL.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.THICK_ICE.value, Map.THICK_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THICK_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THICK_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THICK_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.THIN_ICE.value, Map.THICK_ICE.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.THIN_ICE.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value, Map.WALL.value,
+            Map.THIN_ICE.value, Map.THICK_ICE.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.FINISH.value, Map.WALL.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.THIN_ICE.value, Map.THICK_ICE.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.EMPTY.value, Map.EMPTY.value,
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.THIN_ICE.value, Map.THIN_ICE.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.THIN_ICE.value, Map.THIN_ICE.value,
+            Map.THIN_ICE.value, Map.WALL.value, Map.EMPTY.value, Map.EMPTY.value,
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value
+        ],
+        [
+            Map.EMPTY.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.EMPTY.value, Map.WALL.value, Map.WALL.value, Map.WALL.value,
+            Map.WALL.value, Map.WALL.value, Map.EMPTY.value, Map.EMPTY.value,
+            Map.EMPTY.value, Map.EMPTY.value, Map.EMPTY.value
+        ],
+        [Map.EMPTY.value] * 19,
+        [Map.EMPTY.value] * 19,
+        [Map.EMPTY.value] * 19
+    ], (14, 7), [(6, 3)], [], [], 93)
 ]
 
 def get_level(index):
