@@ -11,6 +11,21 @@ class Map(Enum):
     FINISH = 7
     WATER = 8
     COIN_BAG = 9
+    
+char_to_map = {
+    '.': Map.EMPTY,
+    '#': Map.WALL,
+    '~': Map.THIN_ICE,
+    '@': Map.THICK_ICE,
+    'L': Map.LOCK,
+    '=': Map.TILE,
+    'T': Map.TELEPORT,
+    'F': Map.FINISH,
+    'W': Map.WATER,
+    '$': Map.COIN_BAG
+}
+
+map_to_char = {v: k for k, v in char_to_map.items()}
 
 color_map = [
     (154, 205, 254),
