@@ -11,21 +11,23 @@ class Map(Enum):
     FINISH = 7
     WATER = 8
     COIN_BAG = 9
-    
-char_to_map = {
-    '.': Map.EMPTY,
-    '#': Map.WALL,
-    '~': Map.THIN_ICE,
-    '@': Map.THICK_ICE,
-    'L': Map.LOCK,
-    '=': Map.TILE,
-    'T': Map.TELEPORT,
-    'F': Map.FINISH,
-    'W': Map.WATER,
-    '$': Map.COIN_BAG
-}
 
-map_to_char = {v: k for k, v in char_to_map.items()}
+char_to_level_map = {
+    '0': Map.EMPTY,
+    '1': Map.WALL,
+    '2': Map.THIN_ICE,
+    '3': Map.THICK_ICE,
+    '4': Map.LOCK,
+    '5': Map.TILE,
+    '6': Map.THIN_ICE,  # THIN_ICE COM BLOCO
+    '7': Map.TELEPORT,
+    '8': Map.THIN_ICE,  # THIN ICE COM COIN_BAG
+    '9': Map.FINISH,
+    'A': Map.THIN_ICE,  # START
+    'B': Map.THIN_ICE,  # THIN ICE COM KEY
+    'C': Map.THICK_ICE, # THICK ICE COM KEY
+    'D': Map.TILE       # TILE COM KEY
+}
 
 color_map = [
     (154, 205, 254),
@@ -42,3 +44,10 @@ color_map = [
 
 def get_color(index):
     return color_map[index]
+
+def get_level_file_name(index):
+    if index < 10:
+        return f"level_00{index}"
+    elif index < 100:
+        return f"level_0{index}"
+    return f"level_{index}"
