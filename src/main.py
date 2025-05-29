@@ -76,6 +76,16 @@ while True:
             CELL_SIZE * 3/8
         )
 
+    for key in game.level.keys:
+        x = key[0] * CELL_SIZE
+        y = (key[1] + 1) * CELL_SIZE
+        pygame.draw.circle(
+            screen, 
+            get_color(Map.LOCK.value), 
+            (x + CELL_SIZE / 2, y + CELL_SIZE / 2), 
+            CELL_SIZE * 3/8
+        )
+
     pygame.draw.rect(
         screen,
         PLAYER,
