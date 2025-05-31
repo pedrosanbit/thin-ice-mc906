@@ -22,7 +22,7 @@ PLAYER = (254, 2, 0)
 TEXT = (0, 78, 158)
 
 level = get_level(0)
-game = Game(0, level, level.start[0], level.start[1], 0, 0, 0, 0, 0)
+game = Game(0, level, level.start[0], level.start[1], 0, 0, 0, 0, 0, (None, (0,0)))
 
 clock = pygame.time.Clock()
 
@@ -46,15 +46,19 @@ while True:
     screen.blit(solved_text, (437, 4))
     screen.blit(points_text, (438, SCREEN_HEIGHT - CELL_SIZE + 4))
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        game.move_player((-1, 0))
-    if keys[pygame.K_RIGHT]:
-        game.move_player((1, 0))
-    if keys[pygame.K_UP]:
-        game.move_player((0, -1))
-    if keys[pygame.K_DOWN]:
-        game.move_player((0, 1))
+    moving_block, block_direction = game.block_mov
+    if (moving_block != None):
+        game.move_block(moving_block, block_direction)
+    else:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            game.move_player((-1, 0))
+        if keys[pygame.K_RIGHT]:
+            game.move_player((1, 0))
+        if keys[pygame.K_UP]:
+            game.move_player((0, -1))
+        if keys[pygame.K_DOWN]:
+            game.move_player((0, 1))
 
     for i in range(0, GRID_LENGTH):
         for j in range(0, GRID_HEIGHT):
@@ -84,6 +88,15 @@ while True:
             get_color(Map.LOCK.value), 
             (x + CELL_SIZE / 2, y + CELL_SIZE / 2), 
             CELL_SIZE * 3/8
+        )
+
+    for block in game.level.blocks:
+        x = block[0] * CELL_SIZE
+        y = (block[1] + 1) * CELL_SIZE
+        pygame.draw.rect(
+            screen, 
+            get_color(Map.BLOCK.value), 
+            (x, y, CELL_SIZE, CELL_SIZE)
         )
 
     pygame.draw.rect(

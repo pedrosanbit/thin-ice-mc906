@@ -2,7 +2,7 @@ from levels import get_level
 from mapping import Map
 
 class Game:
-    def __init__(self, num_level, level, player_x, player_y, points, current_points, keys_obtained, current_tiles, solved):
+    def __init__(self, num_level, level, player_x, player_y, points, current_points, keys_obtained, current_tiles, solved, block_mov):
         self.num_level = num_level
         self.level = level
         self.player_x = player_x
@@ -12,6 +12,7 @@ class Game:
         self.keys_obtained = keys_obtained
         self.current_tiles = current_tiles
         self.solved = solved
+        self.block_mov = block_mov
 
     def load_level(self, num_level):
         self.level = get_level(num_level)
@@ -78,11 +79,29 @@ class Game:
                     self.keys_obtained -= 1
                     self.level.grid[nr][nc] = Map.THIN_ICE.value
 
+    def move_block(self, block, direction):
+        new_x = block[0] + direction[0]
+        new_y = block[1] + direction[1]
+
+        if self.level.grid[new_y][new_x] in (Map.WALL.value, Map.LOCK.value, Map.WATER.value):
+            self.block_mov = (None, (0,0))
+            return
+        
+        self.level.blocks.remove(block)
+        self.level.blocks.append((new_x, new_y))
+        self.block_mov = ((new_x, new_y), direction)
+
+
     def move_player(self, direction):
         new_x = self.player_x + direction[0]
         new_y = self.player_y + direction[1]
 
         if self.level.grid[new_y][new_x] in (Map.WALL.value, Map.LOCK.value, Map.WATER.value):
+            return
+        
+        if (new_x, new_y) in (self.level.blocks):
+            print("empurrando bloco")
+            self.block_mov = ((new_x, new_y), direction)
             return
 
         current_tile = self.level.grid[self.player_y][self.player_x]
