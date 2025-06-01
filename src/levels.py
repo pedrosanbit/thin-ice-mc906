@@ -105,7 +105,7 @@ def get_level(index):
                 x, y = map(int, line.strip().split(":")[1].split(","))
                 start = (x, y)
             elif line.startswith("TOTAL_TILES:"):
-                total_tiles = int(line.strip().split(":")[1])
+                total_tiles = int(line.strip().split(":")[1]) - 1
             elif line.startswith("COIN_BAGS:"):
                 items = line.strip().split(":")[1]
                 coin_bags = [tuple(map(int, item.split(","))) for item in items.split(";") if item]
