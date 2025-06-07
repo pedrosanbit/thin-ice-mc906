@@ -2,22 +2,23 @@ from mapping import Map, char_to_level_map, get_level_file_name
 import copy
 import os
 
-# Inverso para salvar com caracteres simplificados
 level_map_to_char = {v: k for k, v in char_to_level_map.items()}
 
 class Level:
-    def __init__(self, grid, start, coin_bags, keys, blocks, total_tiles):
+    def __init__(self, grid, start, coin_bags, keys, blocks, total_tiles, teleports):
         self.grid = grid
         self.start = start
         self.coin_bags = coin_bags
         self.keys = keys
         self.blocks = blocks
         self.total_tiles = total_tiles
-
+        self.teleports = teleports 
+        
 def encode_txt_to_levels(txt_path, index):
     coin_bags = []
     keys = []
     blocks = []
+    teleports = [] 
     start = (0, 0)
     grid = []
 
@@ -34,6 +35,8 @@ def encode_txt_to_levels(txt_path, index):
                     keys.append((i, j))
                 if char == '6':
                     blocks.append((i, j))
+                if char == '7':
+                    teleports.append((i, j))  # NOVO
                 map_enum = char_to_level_map.get(char, Map.EMPTY)
                 row.append(map_enum.value)
             grid.append(row)
@@ -45,8 +48,7 @@ def encode_txt_to_levels(txt_path, index):
         1 for row in grid for val in row if val == Map.THICK_ICE.value
     )
 
-    return Level(grid, start, coin_bags, keys, blocks, total_tiles)
-
+    return Level(grid, start, coin_bags, keys, blocks, total_tiles, teleports)
 
 def encode_levels_to_txt(level, index):
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -63,6 +65,7 @@ def encode_levels_to_txt(level, index):
             f.write(f"COIN_BAGS:{';'.join(f'{y},{x}' for x, y in level.coin_bags)}\n")
             f.write(f"KEYS:{';'.join(f'{y},{x}' for x, y in level.keys)}\n")
             f.write(f"BLOCKS:{';'.join(f'{y},{x}' for x, y in level.blocks)}\n")
+            f.write(f"TELEPORTS:{';'.join(f'{y},{x}' for x, y in level.teleports)}\n") 
 
             for i, row in enumerate(level.grid):
                 line = ""
@@ -95,7 +98,7 @@ def get_level(index):
     with open(path, "r", encoding="utf-8") as f:
         start = (0, 0)
         total_tiles = 0
-        coin_bags, keys, blocks = [], [], []
+        coin_bags, keys, blocks, teleports = [], [], [], []
 
         while True:
             line = f.readline()
@@ -115,6 +118,9 @@ def get_level(index):
             elif line.startswith("BLOCKS:"):
                 items = line.strip().split(":")[1]
                 blocks = [tuple(map(int, item.split(","))) for item in items.split(";") if item]
+            elif line.startswith("TELEPORTS:"):
+                items = line.strip().split(":")[1]
+                teleports = [tuple(map(int, item.split(","))) for item in items.split(";") if item]
             else:
                 break
 
@@ -127,4 +133,4 @@ def get_level(index):
                 row.append(map_enum.value)
             grid.append(row)
 
-        return Level(grid, start, coin_bags, keys, blocks, total_tiles)
+        return Level(grid, start, coin_bags, keys, blocks, total_tiles, teleports)
