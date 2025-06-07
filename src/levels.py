@@ -1,18 +1,29 @@
-from mapping import Map, char_to_level_map, get_level_file_name
+from src.mapping import Map, char_to_level_map, get_level_file_name
 import copy
 import os
 
 level_map_to_char = {v: k for k, v in char_to_level_map.items()}
 
 class Level:
-    def __init__(self, grid, start, coin_bags, keys, blocks, total_tiles, teleports):
+    def __init__(self, grid, start, coin_bags, keys, blocks, teleports):
         self.grid = grid
         self.start = start
         self.coin_bags = coin_bags
         self.keys = keys
         self.blocks = blocks
-        self.total_tiles = total_tiles
         self.teleports = teleports 
+        
+        self.total_tiles = self.compute_total_tiles()
+        
+    def compute_total_tiles(self):
+        return sum(
+            1 for row in self.grid for val in row if val == Map.THIN_ICE.value
+        ) + sum(
+            2 for row in self.grid for val in row if val == Map.THICK_ICE.value
+        ) + sum(
+            1 for row in self.grid for val in row
+            if val not in (Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.THICK_ICE.value)
+        )
         
 def encode_txt_to_levels(txt_path, index):
     coin_bags = []
@@ -41,14 +52,7 @@ def encode_txt_to_levels(txt_path, index):
                 row.append(map_enum.value)
             grid.append(row)
 
-    total_tiles = sum(
-        1 for row in grid for val in row
-        if val not in (Map.EMPTY.value, Map.WALL.value)
-    ) + sum(
-        1 for row in grid for val in row if val == Map.THICK_ICE.value
-    )
-
-    return Level(grid, start, coin_bags, keys, blocks, total_tiles, teleports)
+    return Level(grid, start, coin_bags, keys, blocks, teleports)
 
 def encode_levels_to_txt(level, index):
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
