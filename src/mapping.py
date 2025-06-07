@@ -11,6 +11,7 @@ class Map(Enum):
     FINISH = 7
     WATER = 8
     COIN_BAG = 9
+    BLOCK = 10
 
 char_to_level_map = {
     '0': Map.EMPTY,
@@ -39,7 +40,8 @@ color_map = [
     (92, 216, 126),
     (255, 206, 207),
     (0, 79, 191),
-    (133, 17, 45)
+    (133, 17, 45),
+    (135, 209, 255)
 ]
 
 def get_color(index):
