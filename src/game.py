@@ -19,6 +19,7 @@ class Game:
         self.current_tiles = 0
         self.player_x = self.level.start[0]
         self.player_y = self.level.start[1]
+        self.keys_obtained = 0
 
     def check_next_level(self):
         if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
@@ -43,7 +44,14 @@ class Game:
         for dr, dc in directions:
             nr, nc = self.player_y + dr, self.player_x + dc
             if 0 <= nr < rows and 0 <= nc < cols:
-                if self.level.grid[nr][nc] not in (Map.WALL.value, Map.WATER.value):
+                # Lock is openable
+                if self.level.grid[nr][nc] == Map.LOCK.value and self.keys_obtained > 0:
+                    return
+                # Walkable tile available
+                if self.level.grid[nr][nc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value) and (nc,nr) not in self.level.blocks:
+                    return
+                # Block is pushable
+                if (nc,nr) in self.level.blocks and self.level.grid[nr + dr][nc + dc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
                     return
         self.current_points = self.points
         self.keys_obtained = 0
@@ -87,6 +95,9 @@ class Game:
             self.block_mov = (None, (0,0))
             return
         
+        if self.level.grid[new_y][new_x] == Map.TELEPORT.value:
+            new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
+        
         self.level.blocks.remove(block)
         self.level.blocks.append((new_x, new_y))
         self.block_mov = ((new_x, new_y), direction)
@@ -99,24 +110,36 @@ class Game:
         if self.level.grid[new_y][new_x] in (Map.WALL.value, Map.LOCK.value, Map.WATER.value):
             return
         
+        if self.level.grid[new_y][new_x] == Map.TELEPORT.value:
+            new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
+            for teleport in self.level.teleports:
+                self.level.grid[teleport[1]][teleport[0]] = Map.TILE.value
+            self.player_x = new_x
+            self.player_y = new_y
+        
         if (new_x, new_y) in (self.level.blocks):
-            print("empurrando bloco")
+            if self.level.grid[new_y + direction[1]][new_x + direction[0]] in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
+                return
             self.block_mov = ((new_x, new_y), direction)
-            return
+            self.move_block(self.block_mov[0], direction)
 
         current_tile = self.level.grid[self.player_y][self.player_x]
         if current_tile == Map.THIN_ICE.value:
             self.level.grid[self.player_y][self.player_x] = Map.WATER.value
-            self.current_tiles += 1
         elif current_tile == Map.THICK_ICE.value:
             self.level.grid[self.player_y][self.player_x] = Map.THIN_ICE.value
-            self.current_tiles += 1
 
         self.check_lock(new_x, new_y)
+
+        if self.level.grid[new_y][new_x] == Map.TELEPORT.value:
+            new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
+            for teleport in self.level.teleports:
+                self.level.grid[teleport[1]][teleport[0]] = Map.TILE.value
 
         self.player_x = new_x
         self.player_y = new_y
         self.current_points += 1
+        self.current_tiles += 1
 
         self.check_coin_bag()
         self.check_key()

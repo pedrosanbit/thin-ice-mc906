@@ -27,7 +27,8 @@ char_to_level_map = {
     'A': Map.THIN_ICE,  # START
     'B': Map.THIN_ICE,  # THIN ICE COM KEY
     'C': Map.THICK_ICE, # THICK ICE COM KEY
-    'D': Map.TILE       # TILE COM KEY
+    'D': Map.TILE,       # TILE COM KEY
+    'E': Map.THICK_ICE  # THICK ICE COM BLOCO
 }
 
 color_map = [

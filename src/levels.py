@@ -1,5 +1,4 @@
-from src.mapping import Map, char_to_level_map, get_level_file_name
-import copy
+from mapping import Map, char_to_level_map, get_level_file_name
 import os
 
 level_map_to_char = {v: k for k, v in char_to_level_map.items()}
@@ -21,9 +20,11 @@ class Level:
         ) + sum(
             2 for row in self.grid for val in row if val == Map.THICK_ICE.value
         ) + sum(
-            1 for row in self.grid for val in row
-            if val not in (Map.EMPTY.value, Map.WALL.value, Map.THIN_ICE.value, Map.THICK_ICE.value)
+            1 for row in self.grid for val in row if val == Map.LOCK.value
+        ) + sum(
+            1 for i in range(len(self.grid)) for j in range(len(self.grid[i])) if self.grid[i][j] == Map.TILE.value and (j, i) in self.keys 
         )
+    
         
 def encode_txt_to_levels(txt_path, index):
     coin_bags = []
@@ -44,7 +45,7 @@ def encode_txt_to_levels(txt_path, index):
                     coin_bags.append((i, j))
                 if char in ('B', 'C', 'D'):
                     keys.append((i, j))
-                if char == '6':
+                if char in ('6', 'E'):
                     blocks.append((i, j))
                 if char == '7':
                     teleports.append((i, j))  # NOVO
@@ -90,7 +91,10 @@ def encode_levels_to_txt(level, index):
                         else:
                             line += level_map_to_char.get(Map(val), '0')
                     elif coord in level.blocks:
-                        line += '6'
+                        if val == Map.THIN_ICE.value:
+                            line += '6'
+                        elif val == Map.THICK_ICE.value:
+                            line += 'E'
                     else:
                         line += level_map_to_char.get(Map(val), '0')
                 f.write(line + "\n")
@@ -137,4 +141,4 @@ def get_level(index):
                 row.append(map_enum.value)
             grid.append(row)
 
-        return Level(grid, start, coin_bags, keys, blocks, total_tiles, teleports)
+        return Level(grid, start, coin_bags, keys, blocks, teleports)
