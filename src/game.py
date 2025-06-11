@@ -1,5 +1,7 @@
-from levels import get_level
-from mapping import Map
+from src.levels import get_level
+from src.mapping import Map
+
+MAX_LEVEL = 36
 
 class Game:
     def __init__(self, num_level, level, player_x, player_y, points, current_points, keys_obtained, current_tiles, solved, block_mov):
@@ -15,6 +17,10 @@ class Game:
         self.block_mov = block_mov
 
     def load_level(self, num_level):
+        if num_level == MAX_LEVEL:
+            print("Levels solved: ", self.solved)
+            print("Total points: ", self.points)
+            return
         self.level = get_level(num_level)
         self.current_tiles = 0
         self.player_x = self.level.start[0]

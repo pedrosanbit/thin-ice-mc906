@@ -1,4 +1,4 @@
-from mapping import Map, char_to_level_map, get_level_file_name
+from src.mapping import Map, char_to_level_map, get_level_file_name
 import os
 
 level_map_to_char = {v: k for k, v in char_to_level_map.items()}

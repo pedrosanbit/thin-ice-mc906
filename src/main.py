@@ -1,8 +1,9 @@
 import pygame
 import sys
-from levels import get_level
-from mapping import Map, get_color
-from game import Game
+import os
+from src.mapping import Map, get_color
+from stable_baselines3 import PPO
+from src.learning.thin_ice_env import ThinIceEnv
 
 pygame.init()
 
@@ -21,44 +22,38 @@ WHITE = (218, 240, 255)
 PLAYER = (254, 2, 0)
 TEXT = (0, 78, 158)
 
-level = get_level(0)
-game = Game(0, level, level.start[0], level.start[1], 0, 0, 0, 0, 0, (None, (0,0)))
-
 clock = pygame.time.Clock()
 
+env = ThinIceEnv()
+model = PPO.load(os.path.join('models', 'ppo_thin_ice'), env)
+
+obs, _ = env.reset()
+done = False
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
 
-    screen.fill(WHITE)
-    next_level = game.check_next_level()
-    if not next_level: game.check_game_over()
+    if done:
+        pygame.quit()
+        sys.exit()
 
-    level_text =  font.render(f'LEVEL {game.num_level + 1}', True, TEXT)
-    progress_text = font.render(f'{game.current_tiles} / {game.level.total_tiles}', True, TEXT)
-    solved_text = font.render(f'SOLVED {game.solved}', True, TEXT)
-    points_text = font.render(f'POINTS {game.current_points}', True, TEXT)
+    action, _states = model.predict(obs)
+    obs, reward, terminated, truncated, info = env.step(action)
+    done = terminated or truncated
+
+    screen.fill(WHITE)
+
+    level_text =  font.render(f'LEVEL {env.game.num_level + 1}', True, TEXT)
+    progress_text = font.render(f'{env.game.current_tiles} / {env.game.level.total_tiles}', True, TEXT)
+    solved_text = font.render(f'SOLVED {env.game.solved}', True, TEXT)
+    points_text = font.render(f'POINTS {env.game.current_points}', True, TEXT)
 
     screen.blit(level_text, (54, 4))
     screen.blit(progress_text, (257, 4))
     screen.blit(solved_text, (437, 4))
     screen.blit(points_text, (438, SCREEN_HEIGHT - CELL_SIZE + 4))
-
-    moving_block, block_direction = game.block_mov
-    if (moving_block != None):
-        game.move_block(moving_block, block_direction)
-    else:
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            game.move_player((-1, 0))
-        if keys[pygame.K_RIGHT]:
-            game.move_player((1, 0))
-        if keys[pygame.K_UP]:
-            game.move_player((0, -1))
-        if keys[pygame.K_DOWN]:
-            game.move_player((0, 1))
 
     for i in range(0, GRID_LENGTH):
         for j in range(0, GRID_HEIGHT):
@@ -66,11 +61,11 @@ while True:
             y = (j + 1) * CELL_SIZE
             pygame.draw.rect(
                 screen,
-                get_color(game.level.grid[j][i]),
+                get_color(env.game.level.grid[j][i]),
                 (x, y, CELL_SIZE, CELL_SIZE)
             )
 
-    for coin_bag in game.level.coin_bags:
+    for coin_bag in env.game.level.coin_bags:
         x = coin_bag[0] * CELL_SIZE
         y = (coin_bag[1] + 1) * CELL_SIZE
         pygame.draw.circle(
@@ -80,7 +75,7 @@ while True:
             CELL_SIZE * 3/8
         )
 
-    for key in game.level.keys:
+    for key in env.game.level.keys:
         x = key[0] * CELL_SIZE
         y = (key[1] + 1) * CELL_SIZE
         pygame.draw.circle(
@@ -90,7 +85,7 @@ while True:
             CELL_SIZE * 3/8
         )
 
-    for block in game.level.blocks:
+    for block in env.game.level.blocks:
         x = block[0] * CELL_SIZE
         y = (block[1] + 1) * CELL_SIZE
         pygame.draw.rect(
@@ -102,7 +97,7 @@ while True:
     pygame.draw.rect(
         screen,
         PLAYER,
-        (game.player_x * CELL_SIZE, (game.player_y + 1) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        (env.game.player_x * CELL_SIZE, (env.game.player_y + 1) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
     )
 
     pygame.display.flip()
