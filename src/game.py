@@ -1,10 +1,16 @@
+# /src/game.py
+
+import random
+
 from src.levels import get_level
 from src.mapping import Map
 
 MAX_LEVEL = 36
 
 class Game:
-    def __init__(self, num_level, level, player_x, player_y, points, current_points, keys_obtained, current_tiles, solved, block_mov):
+    def __init__(self, num_level, level, player_x, player_y, points, current_points,
+                 keys_obtained, current_tiles, solved, block_mov,
+                 random_levels=False, seed=42):
         self.num_level = num_level
         self.level = level
         self.player_x = player_x
@@ -16,27 +22,46 @@ class Game:
         self.solved = solved
         self.block_mov = block_mov
 
-    def load_level(self, num_level):
-        if num_level == MAX_LEVEL:
-            print("Levels solved: ", self.solved)
-            print("Total points: ", self.points)
-            return
-        self.level = get_level(num_level)
+        self.random_levels = random_levels
+        self.seed = seed
+        
+    def load_level(self, level_folder, next_idx=None):
+        if self.random_levels:
+            random.seed(self.seed + self.num_level)
+            next_idx = random.randint(0, 999)
+        elif next_idx is None:
+            next_idx = (self.num_level + 1) % 1000
+
+        self.num_level = next_idx
+        self.level = get_level(level_folder, self.num_level)
         self.current_tiles = 0
         self.player_x = self.level.start[0]
         self.player_y = self.level.start[1]
         self.keys_obtained = 0
 
-    def check_next_level(self):
+    def reload_level(self, level_folder):
+        self.level = get_level(level_folder, self.num_level)
+        self.current_tiles = 0
+        self.player_x = self.level.start[0]
+        self.player_y = self.level.start[1]
+        self.keys_obtained = 0
+        self.block_mov = (None, (0, 0))
+
+        
+    def load_next_level(self, level_folder):
+        self.load_level(level_folder)
+
+
+    def check_next_level(self, level_folder):
         if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
-            self.num_level += 1
+            self.load_next_level(level_folder)
             self.current_points += self.current_tiles * 2
             self.points = self.current_points
             if self.current_tiles == self.level.total_tiles:
                 self.solved += 1
-            self.load_level(self.num_level)
             return True
         return False
+
     
     def check_game_over(self):
         rows = len(self.level.grid)
