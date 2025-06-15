@@ -3,7 +3,6 @@
 import pygame
 import sys
 from src.levels import get_level
-from src.mapping import Map, get_color
 from src.game import Game
 from src.utils import draw_game_screen
 
