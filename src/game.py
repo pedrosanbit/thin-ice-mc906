@@ -63,7 +63,7 @@ class Game:
         return False
 
     
-    def check_game_over(self):
+    def check_game_over(self, level_folder):
         rows = len(self.level.grid)
         cols = len(self.level.grid[0])
         directions = [
@@ -86,7 +86,7 @@ class Game:
                     return
         self.current_points = self.points
         self.keys_obtained = 0
-        self.load_level(self.num_level)
+        self.load_level(level_folder, self.num_level)
 
     def check_coin_bag(self):
         for coin_bag in self.level.coin_bags:

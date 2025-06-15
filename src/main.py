@@ -53,7 +53,7 @@ while True:
     screen.fill(WHITE)
     next_level = game.check_next_level(level_folder)
     if not next_level:
-        game.check_game_over()
+        game.check_game_over(level_folder)
 
     moving_block, block_direction = game.block_mov
     if moving_block is not None:
