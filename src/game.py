@@ -1,176 +1,266 @@
-# /src/game.py
+from __future__ import annotations
 
 import random
+from enum import Enum
+from typing import Optional, Tuple
 
-from src.levels import get_level
+from src.grid import Grid  # novo wrapper seguro
+from src.levels import Level
 from src.mapping import Map
+from src.level_set import LevelSet, Progression  # wrapper de conjuntos de fases
 
-MAX_LEVEL = 36
+
+class Mode(Enum):
+    NORMAL = "normal"
+    RESTRICTED = "restricted"  # deve coletar 100 % da pontuação
+
 
 class Game:
-    def __init__(self, num_level, level, player_x, player_y, points, current_points,
-                 keys_obtained, current_tiles, solved, block_mov,
-                 random_levels=False, seed=42):
-        self.num_level = num_level
-        self.level = level
-        self.player_x = player_x
-        self.player_y = player_y
-        self.points = points
-        self.current_points = current_points
-        self.keys_obtained = keys_obtained
-        self.current_tiles = current_tiles
-        self.solved = solved
-        self.block_mov = block_mov
+    """Lógica do jogo + progressão controlada por *LevelSet*.
 
-        self.random_levels = random_levels
-        self.seed = seed
-        
-    def load_level(self, level_folder, next_idx=None):
-        if self.random_levels:
-            random.seed(self.seed + self.num_level)
-            next_idx = random.randint(0, 999)
-        elif next_idx is None:
-            next_idx = (self.num_level + 1) % 1000
+    Todos os acessos à matriz agora passam pelo wrapper :class:`Grid`.
+    Isso elimina a repetição de verificações de limites e reduz o risco de
+    `IndexError`.
+    """
 
-        self.num_level = next_idx
-        self.level = get_level(level_folder, self.num_level)
+    MAX_LEVEL = 999  # mantido para compatibilidade
+
+    # --------------------------------------------------
+    # Inicialização
+    # --------------------------------------------------
+    def __init__(
+        self,
+        level_set: LevelSet,
+        mode: Mode = Mode.NORMAL,
+        *,
+        start_index: int = 0,
+    ) -> None:
+        self.level_set = level_set
+        self.mode = mode
+
+        # Estado global
+        self.num_level: int = start_index
+        self.level: Level = self.level_set.get_level(start_index)
+        self.player_x, self.player_y = self.level.start
+
+        # Pontuação
+        self.points: int = 0              # soma persistente
+        self.current_points: int = 0      # durante fase corrente
+        self._points_at_level_start: int = 0
+
+        # Estatísticas auxiliares
+        self.current_tiles: int = 0
+        self.solved: int = 0
+
+        # Inventário
+        self.keys_obtained: int = 0
+        # (bloco sendo movido, direcao)
+        self.block_mov: Tuple[Optional[Tuple[int, int]], Tuple[int, int]] = (None, (0, 0))
+
+    # --------------------------------------------------
+    # Carregamento de fases
+    # --------------------------------------------------
+    def _load_level(self, idx: int) -> None:
+        """Carrega *idx* e reseta contadores locais."""
+        self.num_level = idx
+        self.level = self.level_set.get_level(idx)
+
+        self.player_x, self.player_y = self.level.start
+
+        self._points_at_level_start = self.current_points
         self.current_tiles = 0
-        self.player_x = self.level.start[0]
-        self.player_y = self.level.start[1]
-        self.keys_obtained = 0
-
-    def reload_level(self, level_folder):
-        self.level = get_level(level_folder, self.num_level)
-        self.current_tiles = 0
-        self.player_x = self.level.start[0]
-        self.player_y = self.level.start[1]
         self.keys_obtained = 0
         self.block_mov = (None, (0, 0))
 
-        
-    def load_next_level(self, level_folder):
-        self.load_level(level_folder)
+    def reload_level(self) -> None:
+        self._load_level(self.num_level)
 
+    def load_next_level(self) -> bool:
+        next_idx = self.level_set.next_index(self.num_level)
+        if next_idx is None:
+            return False  # jogo acabou (modo sequencial)
+        self._load_level(next_idx)
+        return True
 
-    def check_next_level(self, level_folder):
-        if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
-            self.load_next_level(level_folder)
-            self.current_points += self.current_tiles * 2
+    # --------------------------------------------------
+    # Verificações de estado
+    # --------------------------------------------------
+    def check_finish(self) -> Tuple[bool, float]:
+        """Verifica se o jogador está no FINISH.
+
+        **Retorno:** `(avancou, ratio_perda)`
+          * `avancou`: True se progrediu para o próximo nível.
+          * `ratio_perda`: 0 se não houve perda ou modo NORMAL; caso RESTRICTED e
+            falha, retorna `(pts_perdidos / total_pts_nivel)`.
+        """
+        if self.level.grid.tile(self.player_x, self.player_y) is not Map.FINISH:
+            return False, 0.0
+
+        # → jogador chegou ao FINISH
+        total_pts_nivel = self.level.total_points
+        pts_coletados = self.current_points - self._points_at_level_start
+        coletou_tudo = pts_coletados >= total_pts_nivel
+
+        if self.mode is Mode.NORMAL or coletou_tudo:
+            # soma pontuação permanentemente
             self.points = self.current_points
-            if self.current_tiles == self.level.total_tiles:
+            if coletou_tudo:
                 self.solved += 1
-            return True
-        return False
+            avancou = self.load_next_level()
+            return avancou, 0.0
 
-    
-    def check_game_over(self, level_folder):
-        rows = len(self.level.grid)
-        cols = len(self.level.grid[0])
-        directions = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1)
-        ]
-        for dr, dc in directions:
-            nr, nc = self.player_y + dr, self.player_x + dc
-            if 0 <= nr < rows and 0 <= nc < cols:
-                # Lock is openable
-                if self.level.grid[nr][nc] == Map.LOCK.value and self.keys_obtained > 0:
-                    return
-                # Walkable tile available
-                if self.level.grid[nr][nc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value) and (nc,nr) not in self.level.blocks:
-                    return
-                # Block is pushable
-                if (nc,nr) in self.level.blocks and self.level.grid[nr + dr][nc + dc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
-                    return
-        self.current_points = self.points
-        self.keys_obtained = 0
-        self.load_level(level_folder, self.num_level)
+        # MODO RESTRICTED e não coletou tudo → reinicia fase
+        pts_perdidos = total_pts_nivel - pts_coletados
+        ratio = pts_perdidos / total_pts_nivel if total_pts_nivel else 0.0
 
-    def check_coin_bag(self):
-        for coin_bag in self.level.coin_bags:
-            if self.player_x == coin_bag[0] and self.player_y == coin_bag[1]:
-                self.current_points += 100
-                self.level.coin_bags.remove(coin_bag)
+        # zera progresso da fase
+        self.current_points = self._points_at_level_start
+        self.reload_level()
+        return False, ratio
+
+    def _blocked(self, x: int, y: int) -> bool:
+        """True se coord é parede, água ou tranca."""
+        tile = self.level.grid.tile(x, y)
+        return tile in (Map.WALL, Map.WATER, Map.LOCK)
+
+    def check_game_over(self) -> None:
+        """Reinicia fase se o jogador ficar preso (sem movimentos)."""
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        for dx, dy in directions:
+            nx, ny = self.player_x + dx, self.player_y + dy
+            if not self.level.grid.inside(nx, ny):
+                continue
+
+            # (a) Tranca abrível
+            if (
+                self.level.grid.tile(nx, ny) is Map.LOCK
+                and self.keys_obtained > 0
+            ):
                 return
-    
-    def check_key(self):
-        for key in self.level.keys:
-            if self.player_x == key[0] and self.player_y == key[1]:
+            # (b) Tile livre
+            if (
+                not self._blocked(nx, ny)
+                and (nx, ny) not in self.level.blocks
+            ):
+                return
+            # (c) Bloco empurrável com espaço
+            if (nx, ny) in self.level.blocks:
+                bx, by = nx + dx, ny + dy
+                if self.level.grid.inside(bx, by) and not self._blocked(bx, by):
+                    return
+
+        # → preso
+        self.current_points = self._points_at_level_start
+        self.reload_level()
+
+    # --------------------------------------------------
+    # Interações de coleta
+    # --------------------------------------------------
+    def check_coin_bag(self) -> None:
+        for cb in list(self.level.coin_bags):  # copia p/ remover em loop
+            if (self.player_x, self.player_y) == cb:
+                self.current_points += 100
+                self.level.coin_bags.remove(cb)
+                break
+
+    def check_key(self) -> None:
+        for key in list(self.level.keys):
+            if (self.player_x, self.player_y) == key:
                 self.keys_obtained += 1
                 self.level.keys.remove(key)
-                return
-            
-    def check_lock(self, x, y):
-        rows = len(self.level.grid)
-        cols = len(self.level.grid[0])
-        directions = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1)
-        ]
-        for dr, dc in directions:
-            nr, nc = y + dr, x + dc
-            if 0 <= nr < rows and 0 <= nc < cols:
-                if self.level.grid[nr][nc] == Map.LOCK.value and self.keys_obtained > 0:
-                    self.keys_obtained -= 1
-                    self.level.grid[nr][nc] = Map.THIN_ICE.value
+                break
 
-    def move_block(self, block, direction):
-        new_x = block[0] + direction[0]
-        new_y = block[1] + direction[1]
-
-        if self.level.grid[new_y][new_x] in (Map.WALL.value, Map.LOCK.value, Map.WATER.value):
-            self.block_mov = (None, (0,0))
+    def check_lock(self, x: int, y: int) -> None:
+        """Destranca vizinhança imediata se houver chave."""
+        if self.keys_obtained == 0:
             return
-        
-        if self.level.grid[new_y][new_x] == Map.TELEPORT.value:
-            new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
-        
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nx, ny = x + dx, y + dy
+            if self.level.grid.inside(nx, ny) and self.level.grid.tile(nx, ny) is Map.LOCK:
+                self.level.grid.set_tile(nx, ny, Map.THIN_ICE)
+                self.keys_obtained -= 1
+                # pode destrancar só uma
+                break
+
+    # --------------------------------------------------
+    # Movimento de blocos
+    # --------------------------------------------------
+    def _move_block(self, block: Tuple[int, int], direction: Tuple[int, int]) -> bool:
+        bx, by = block
+        dx, dy = direction
+        nx, ny = bx + dx, by + dy
+
+        # fora ou bloqueado → falha
+        if not self.level.grid.inside(nx, ny) or self._blocked(nx, ny):
+            return False
+
+        # teleporte: atualiza destino
+        if self.level.grid.tile(nx, ny) is Map.TELEPORT:
+            idx = self.level.teleports.index((nx, ny))
+            nx, ny = self.level.teleports[1 - idx]
+
+        # move bloco
         self.level.blocks.remove(block)
-        self.level.blocks.append((new_x, new_y))
-        self.block_mov = ((new_x, new_y), direction)
+        self.level.blocks.append((nx, ny))
+        self.block_mov = ((nx, ny), direction)
+        return True
 
+    # --------------------------------------------------
+    # Movimento do jogador
+    # --------------------------------------------------
+    def move_player(self, direction: Tuple[int, int]) -> None:
+        dx, dy = direction
+        nx, ny = self.player_x + dx, self.player_y + dy
 
-    def move_player(self, direction):
-        new_x = self.player_x + direction[0]
-        new_y = self.player_y + direction[1]
+        if not self.level.grid.inside(nx, ny):
+            return  # fora do grid
 
-        if self.level.grid[new_y][new_x] in (Map.WALL.value, Map.LOCK.value, Map.WATER.value):
-            return
-        
-        if self.level.grid[new_y][new_x] == Map.TELEPORT.value:
-            new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
-            for teleport in self.level.teleports:
-                self.level.grid[teleport[1]][teleport[0]] = Map.TILE.value
-            self.player_x = new_x
-            self.player_y = new_y
-        
-        if (new_x, new_y) in (self.level.blocks):
-            if self.level.grid[new_y + direction[1]][new_x + direction[0]] in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
-                return
-            self.block_mov = ((new_x, new_y), direction)
-            self.move_block(self.block_mov[0], direction)
+        if self._blocked(nx, ny):
+            return  # parede/água/tranca
 
-        current_tile = self.level.grid[self.player_y][self.player_x]
-        if current_tile == Map.THIN_ICE.value:
-            self.level.grid[self.player_y][self.player_x] = Map.WATER.value
-        elif current_tile == Map.THICK_ICE.value:
-            self.level.grid[self.player_y][self.player_x] = Map.THIN_ICE.value
+        # Teleporte (entrada)
+        if self.level.grid.tile(nx, ny) is Map.TELEPORT:
+            idx = self.level.teleports.index((nx, ny))
+            nx, ny = self.level.teleports[1 - idx]
+            # converte ambos para TILE para evitar loop
+            for tx, ty in self.level.teleports:
+                self.level.grid.set_tile(tx, ty, Map.TILE)
 
-        self.check_lock(new_x, new_y)
+        # Bloco empurrável
+        if (nx, ny) in self.level.blocks:
+            if not self._move_block((nx, ny), direction):
+                return  # não pôde empurrar
 
-        if self.level.grid[new_y][new_x] == Map.TELEPORT.value:
-            new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
-            for teleport in self.level.teleports:
-                self.level.grid[teleport[1]][teleport[0]] = Map.TILE.value
+        # Atualiza o tile que ficou para trás
+        current_tile = self.level.grid.tile(self.player_x, self.player_y)
+        if current_tile is Map.THIN_ICE:
+            self.level.grid.set_tile(self.player_x, self.player_y, Map.WATER)
+        elif current_tile is Map.THICK_ICE:
+            self.level.grid.set_tile(self.player_x, self.player_y, Map.THIN_ICE)
 
-        self.player_x = new_x
-        self.player_y = new_y
+        # Destranca vizinhança, se aplicável
+        self.check_lock(nx, ny)
+
+        # Teleporte (saída) – caso tenha caído num teleporte carregado por bloco
+        if self.level.grid.tile(nx, ny) is Map.TELEPORT:
+            idx = self.level.teleports.index((nx, ny))
+            nx, ny = self.level.teleports[1 - idx]
+            for tx, ty in self.level.teleports:
+                self.level.grid.set_tile(tx, ty, Map.TILE)
+
+        # Atualiza posição
+        self.player_x, self.player_y = nx, ny
         self.current_points += 1
         self.current_tiles += 1
 
+        # Coletas
         self.check_coin_bag()
         self.check_key()
+
+    # --------------------------------------------------
+    # Conveniências p/ renderização/AI
+    # --------------------------------------------------
+    @property
+    def grid(self) -> Grid:
+        return self.level.grid

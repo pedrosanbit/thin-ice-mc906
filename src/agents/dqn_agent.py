@@ -7,7 +7,7 @@ from collections import deque
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from src.agents.networks import CnnQNet
+from src.agents.networks import DuelingCnnQNet
 
 
 class ReplayBuffer:
@@ -52,12 +52,13 @@ class DQNAgent:
         self.n_actions = n_actions
         self.gamma = gamma
         self.batch_size = batch_size
-        self.update_target_every = update_target_every
+        self.update_target_every = update_target_every  # ainda usado como fallback
+        self.tau = 0.005  # taxa de Polyak soft-update
         self.double_dqn = double_dqn
 
         # redes
-        self.policy_net = CnnQNet(state_shape[0], n_actions).to(device)
-        self.target_net = CnnQNet(state_shape[0], n_actions).to(device)
+        self.policy_net = DuelingCnnQNet(state_shape[0], n_actions).to(device)
+        self.target_net = DuelingCnnQNet(state_shape[0], n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
@@ -130,7 +131,13 @@ class DQNAgent:
         loss.backward()
         self.optimizer.step()
 
-        # atualização da target net
+        # ---------- atualização da target (soft) ----------
+        with torch.no_grad():
+            for tgt, src in zip(self.target_net.parameters(),
+                                self.policy_net.parameters()):
+                tgt.data.mul_(1.0 - self.tau).add_(self.tau * src.data)
+
+        # fallback full copy (caso queira manter)
         if self.step_count % self.update_target_every == 0:
             self.target_net.load_state_dict(self.policy_net.state_dict())
 

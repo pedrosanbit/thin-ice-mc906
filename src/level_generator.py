@@ -3,11 +3,11 @@ import random
 from typing import List, Tuple
 
 from src.mapping import Map
-from src.levels import Level, encode_levels_to_txt, get_level
-
+from src.levels import Level
+from src.level_set import LevelSet, Progression   # ⬅️ NOVO
 
 class LevelGenerator:
-    """Gera fases procedurais para o Thin Ice."""
+    """Gera fases procedurais para o Thin Ice e grava via LevelSet."""
 
     GRID_HEIGHT = 15
     GRID_LENGTH = 19
@@ -18,79 +18,74 @@ class LevelGenerator:
         self.max_size = max_size
 
     def _random_walk(self) -> Tuple[List[List[int]], Tuple[int, int], int]:
-        """
-        Constrói uma grade e devolve (grid, coord_start, passos).
-
-        – Não mantém 'visited': o caminho pode revisitar gelo fino
-          (convertendo-o em gelo grosso).  
-        – Nunca permite voltar ao FINISH.  
-        – Nunca pisa num vizinho que já seja THICK_ICE.
-        """
         grid = [[Map.WALL.value for _ in range(self.GRID_LENGTH)]
                 for _ in range(self.GRID_HEIGHT)]
 
-        # coloca o ponto final
-        fy = random.randint(0, self.GRID_HEIGHT - 1)
-        fx = random.randint(0, self.GRID_LENGTH - 1)
+        fy, fx = random.randrange(self.GRID_HEIGHT), random.randrange(self.GRID_LENGTH)
         grid[fy][fx] = Map.FINISH.value
 
-        cy, cx = fy, fx            # posição corrente
+        cy, cx = fy, fx
         steps = 0
 
         while steps < self.max_size:
             dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-            options = []
+            opts = []
             for dy, dx in dirs:
                 ny, nx = cy + dy, cx + dx
                 if not (0 <= ny < self.GRID_HEIGHT and 0 <= nx < self.GRID_LENGTH):
-                    continue                         # fora da grade
+                    continue
                 tile = grid[ny][nx]
-                if tile == Map.FINISH.value:         # (2) não volta ao FINISH
+                if tile in (Map.FINISH.value, Map.THICK_ICE.value):
                     continue
-                if tile == Map.THICK_ICE.value:      # (3) evita gelo grosso
-                    continue
-                options.append((ny, nx))
+                opts.append((ny, nx))
 
-            if not options:
-                break                                # sem movimento possível
+            if not opts:
+                break
 
-            cy, cx = random.choice(options)
+            cy, cx = random.choice(opts)
             if grid[cy][cx] == Map.WALL.value:
                 grid[cy][cx] = Map.THIN_ICE.value
             elif grid[cy][cx] == Map.THIN_ICE.value:
                 grid[cy][cx] = Map.THICK_ICE.value
-
             steps += 1
 
-        start = (cx, cy)  # (x, y) — nota: encode_levels_to_txt assume (x,y)
-        
+        start = (cx, cy)
         return grid, start, steps
 
-    def build_random_levels(self, total_levels: int, output_folder = None) -> str:
-        if output_folder == None:
+    def build_random_levels(self, total_levels: int, output_folder: str | None = None
+                            ) -> LevelSet:
+        """
+        Gera *total_levels* fases entre `min_size` e `max_size` passos e
+        devolve um objeto LevelSet pronto para uso.
+        """
+        if output_folder is None:
             output_folder = f"type_{self.min_size:04}_{self.max_size:04}"
+
+        level_set = LevelSet(
+            folder=output_folder,
+            max_index=total_levels - 1,
+            progression=Progression.RANDOM,
+        )
 
         idx = 0
         while idx < total_levels:
-            success, tries = False, 0
-            while not success and tries < self.MAX_ATTEMPTS:
-                tries += 1
+            success = False
+            for _try in range(self.MAX_ATTEMPTS):
                 grid, start, steps = self._random_walk()
                 if steps < self.min_size:
-                    continue         
-
-                # início não pode ser THICK_ICE
+                    continue
                 sx, sy = start
                 if grid[sy][sx] == Map.THICK_ICE.value:
-                    continue
+                    continue     
 
                 level = Level(grid, start, [], [], [], [])
-                encode_levels_to_txt(level, output_folder, idx)
+                level_set.save_level(level, idx)
                 print(f"[INFO] Fase {idx:04} gerada com {steps} passos.")
-                idx += 1
                 success = True
+                idx += 1
+                break
 
             if not success:
-                print(f"[ERRO] Nível {idx} falhou após {self.MAX_ATTEMPTS} tentativas.")
+                print(f"[ERRO] Falha ao gerar nível {idx} após {self.MAX_ATTEMPTS} tentativas.")
 
-        return output_folder
+        return level_set

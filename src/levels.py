@@ -5,45 +5,36 @@ import random
 import copy
 import os
 
+from src.grid import Grid      # novo import
+
 level_map_to_char = {v: k for k, v in char_to_level_map.items()}
 
 class Level:
-    def __init__(
-        self,
-        grid,
-        start,
-        coin_bags,
-        keys,
-        blocks,
-        teleports,
-        total_tiles=None, 
-        total_points=None
-    ):
-        self.grid       = grid
-        self.start      = start
-        self.coin_bags  = coin_bags
-        self.keys       = keys
-        self.blocks     = blocks
-        self.teleports  = teleports
+    def __init__(self, grid_raw, start, coin_bags, keys, blocks, teleports,
+                 total_tiles=None, total_points=None):
+        # ⬇️ gere o wrapper já na criação
+        self.grid: Grid = Grid(grid_raw)
 
-        # usa o valor passado se existir; caso contrário calcula
-        self.total_tiles =  self.compute_total_tiles()
-        
-        self.total_points = self.compute_total_points()
-        
-    def compute_total_tiles(self):
-        return sum(
-            1 for row in self.grid for val in row if val == Map.THIN_ICE.value
-        ) + sum(
-            1 for row in self.grid for val in row if val == Map.THICK_ICE.value
-        )
-        
-    def compute_total_points(self):
-        return sum(
-            1 for row in self.grid for val in row if val == Map.THIN_ICE.value
-        ) + sum(
-            2 for row in self.grid for val in row if val == Map.THICK_ICE.value
-        ) + 100*len(self.coin_bags)
+        self.start = start
+        self.coin_bags = coin_bags
+        self.keys = keys
+        self.blocks = blocks
+        self.teleports = teleports
+
+        # agora pode usar os helpers do Grid
+        self.total_tiles = total_tiles or self.compute_total_tiles()
+        self.total_points = total_points or self.compute_total_points()
+
+    # use o iterador seguro
+    def compute_total_tiles(self) -> int:
+        return sum(1 for _, _, t in self.grid.iter_coords()
+                   if t in (Map.THIN_ICE, Map.THICK_ICE))
+
+    def compute_total_points(self) -> int:
+        tiles = sum(1 if t == Map.THIN_ICE else 2
+                    for _, _, t in self.grid.iter_coords()
+                    if t in (Map.THIN_ICE, Map.THICK_ICE))
+        return tiles + 100 * len(self.coin_bags)
         
 def get_level_path(folder, index):
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
