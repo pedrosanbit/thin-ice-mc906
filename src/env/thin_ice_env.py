@@ -43,60 +43,67 @@ class ThinIceEnv(gym.Env):
         return obs, info
 
     def step(self, action: int):
+        """Aplica a ação, calcula recompensas e devolve (obs, reward, done, truncated, info)."""
+
+        # ---------- 1. Executa ação ----------
         self.step_count += 1
-        dr, dc = type(self).ACTIONS[action]
+        dx, dy = type(self).ACTIONS[action]
 
-        prev_x, prev_y = self.game.player_x, self.game.player_y
-        prev_points = self.game.current_points
-        prev_tiles = self.game.current_tiles
+        prev_x, prev_y          = self.game.player_x, self.game.player_y
+        prev_points             = self.game.current_points
+        prev_tiles              = self.game.current_tiles
 
-        self.game.move_player((dr, dc))
-        new_pos = (self.game.player_x, self.game.player_y)
-        invalid = (prev_x, prev_y) == new_pos
+        self.game.move_player((dx, dy))
+        new_pos   = (self.game.player_x, self.game.player_y)
+        invalid   = (prev_x, prev_y) == new_pos               # não saiu do lugar?
 
-        reward = 0.0 if invalid else -0.01
-
-        # Recompensa por visitar nova célula
-        if not invalid and new_pos not in self.visited:
+        # ---------- 2. Recompensas imediatas ----------
+        reward = 0.0 if invalid else -0.01                    # custo do passo
+        if not invalid and new_pos not in self.visited:       # explorou tile novo
             reward += 0.05
             self.visited.add(new_pos)
 
-        # Fase concluída
-        if self.game.check_next_level(self.level_folder):
-            reward += 1.0  # bônus por terminar
+        # coleta de moedas / tiles (diferença desde último step)
+        if self.game.current_points > prev_points:
+            reward += (self.game.current_points - prev_points) * 0.01
+        if self.game.current_tiles  > prev_tiles:
+            reward += 0.01
 
-            # Penalidade proporcional se não pegou todos os pontos
-            total = self.game.level.total_points
-            current = self.game.current_points
+        # ---------- 3. Verifica término ou travamento ----------
+        done = False
+        if self.game.check_next_level(self.level_folder):     # fase concluída
+            # ———— parâmetros da fórmula —
+            FINISH_BASE   = 1.0   # a
+            PERFECT_BONUS = 1.0   # -b  (b = -1  → +1 se perfeito)
+            PENALTY_W     = 2.0   # c/d
 
-            if current < total:
-                missed = total - current
-                a = 1.0  # peso proporcional (ajustável)
-                b = 0.2  # penalidade mínima fixa (ajustável)
+            total_pts   = self.game.level.total_points
+            current_pts = self.game.current_points
+            miss_ratio  = 0 if total_pts == 0 else (total_pts - current_pts) / total_pts
 
-                penalty = a * (missed / total) + b
-                reward -= penalty
+            total_tiles = self.game.level.total_tiles
+            miss_tiles  = (total_tiles - self.game.current_tiles) / total_tiles
 
-                self.game.level.missed_points_penalty_applied = True
-                #print(f"[⚠️] Penalidade aplicada: deixou de coletar {missed}/{total} pontos. Penalidade = -{penalty:.3f}")
+            perfect = (miss_ratio == 0) and (miss_tiles == 0)
+
+            # ———— aplica fórmula —
+            reward += FINISH_BASE
+            if perfect:
+                reward += PERFECT_BONUS
+            reward -= miss_ratio * PENALTY_W   # só moedas; inclua +miss_tiles*… se quiser penalizar tiles também
 
             self.level_index = self.game.num_level
             print(f"→ Avançou para o nível {self.level_index}")
-            done = True 
-        elif self._stuck():
-            reward -= 1.0
             done = True
-        else:
-            done = False
 
-        # Recompensas por coleta (detecção por diferença)
-        if self.game.current_points > prev_points:
-            reward += (self.game.current_points - prev_points) * 0.002  # balanceável
-        if self.game.current_tiles > prev_tiles:
-            reward += 0.01
+        elif self._stuck():
+            reward -= 1.0      # encurralado
+            done = True
 
+        # ---------- 4. Truncamento por passo máximo ----------
         truncated = self.step_count >= self.max_steps
         info = {"invalid": invalid, "action_mask": self._legal_mask()}
+
         return self._get_obs(), reward, done, truncated, info
 
     def _get_obs(self):
@@ -149,4 +156,3 @@ class ThinIceEnv(gym.Env):
         
     def change_level_folder(self, new_folder):
         self.level_folder = new_folder
-

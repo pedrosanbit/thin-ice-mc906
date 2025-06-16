@@ -22,7 +22,7 @@ WHITE = (218, 240, 255)
 PLAYER = (254, 2, 0)
 TEXT = (0, 78, 158)
 
-level_folder = "original_game"
+level_folder = "type_0012_0016"
 use_random_levels = False
 seed = 42
 initial_level = get_level(level_folder, 0)

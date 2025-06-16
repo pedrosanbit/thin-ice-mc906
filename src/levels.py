@@ -90,17 +90,17 @@ def encode_levels_to_txt(level, folder, index):
         
     try:
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write(f"START:{level.start[1]},{level.start[0]}\n")
+            f.write(f"START:{level.start[0]},{level.start[1]}\n")
             f.write(f"TOTAL_TILES:{level.total_tiles}\n")
-            f.write(f"COIN_BAGS:{';'.join(f'{y},{x}' for x, y in level.coin_bags)}\n")
-            f.write(f"KEYS:{';'.join(f'{y},{x}' for x, y in level.keys)}\n")
-            f.write(f"BLOCKS:{';'.join(f'{y},{x}' for x, y in level.blocks)}\n")
-            f.write(f"TELEPORTS:{';'.join(f'{y},{x}' for x, y in level.teleports)}\n") 
+            f.write(f"COIN_BAGS:{';'.join(f'{x},{y}' for x, y in level.coin_bags)}\n")
+            f.write(f"KEYS:{';'.join(f'{x},{y}' for x, y in level.keys)}\n")
+            f.write(f"BLOCKS:{';'.join(f'{x},{y}' for x, y in level.blocks)}\n")
+            f.write(f"TELEPORTS:{';'.join(f'{x},{y}' for x, y in level.teleports)}\n") 
 
             for i, row in enumerate(level.grid):
                 line = ""
                 for j, val in enumerate(row):
-                    coord = (i, j)
+                    coord = (j, i)
                     if coord == level.start:
                         line += 'A'
                     elif coord in level.coin_bags:
@@ -165,61 +165,3 @@ def get_level(folder, index):
             grid.append(row)
 
         return Level(grid, start, coin_bags, keys, blocks, total_tiles, teleports)
-    
-def build_random_levels(min_size, max_size, total_levels, output_folder):
-    GRID_HEIGHT = 15
-    GRID_LENGTH = 19
-
-    level_idx = 0
-    while level_idx < total_levels:
-        success = False
-        attempts = 0
-
-        while not success and attempts < 20:
-            attempts += 1
-            grid = [[Map.WALL.value for _ in range(GRID_LENGTH)] for _ in range(GRID_HEIGHT)]
-            visited = set()
-
-            a = random.randint(0, GRID_HEIGHT - 1)
-            b = random.randint(0, GRID_LENGTH - 1)
-
-            grid[a][b] = Map.FINISH.value
-            path = [(a, b)]
-            visited.add((a, b))
-            passos = 0
-
-            while passos < max_size:
-                i, j = path[-1]
-                directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                next_steps = [
-                    (ni, nj)
-                    for di, dj in directions
-                    if 0 <= (ni := i + di) < GRID_HEIGHT and 0 <= (nj := j + dj) < GRID_LENGTH
-                    if (ni, nj) not in visited and grid[ni][nj] in [Map.WALL.value, Map.THIN_ICE.value]
-                ]
-
-                if not next_steps:
-                    break
-
-                ni, nj = random.choice(next_steps)
-                if grid[ni][nj] == Map.THIN_ICE.value:
-                    grid[ni][nj] = Map.THICK_ICE.value
-                elif grid[ni][nj] == Map.WALL.value:
-                    grid[ni][nj] = Map.THIN_ICE.value
-
-                visited.add((ni, nj))
-                path.append((ni, nj))
-                passos += 1
-
-            if passos < min_size:
-                continue
-
-            start = path[-1]
-            level = Level(grid, start, [], [], [], [])
-            encode_levels_to_txt(level, output_folder, level_idx)
-            print(f"[INFO] Fase {level_idx:04} gerada com {passos} passos.")
-            level_idx += 1
-            success = True
-
-        if not success:
-            print(f"[ERRO] Não foi possível gerar o nível {level_idx} após 20 tentativas. Tentando novamente...")

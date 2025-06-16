@@ -1,21 +1,18 @@
-# /src/scripts/train
-
 import matplotlib.pyplot as plt
 import numpy as np
 
+from src.level_generator import LevelGenerator
 from src.env.thin_ice_env import ThinIceEnv
 from src.agents.dqn_agent import DQNAgent
-from src.levels import build_random_levels
+from src.level_generator import LevelGenerator
 
-LEVEL_FOLDER = "procedural_generated/type_0012_0016/"
 
-# Gera fases proceduralmente
-build_random_levels(
+lg_loader = LevelGenerator(
     min_size=12,
-    max_size=16,
-    total_levels=1000,
-    output_folder=LEVEL_FOLDER
+    max_size=16
 )
+
+LEVEL_FOLDER = lg_loader.build_random_levels(1000)
 
 # Inicializa ambiente e agente
 env = ThinIceEnv(level_index=0, level_folder=LEVEL_FOLDER)

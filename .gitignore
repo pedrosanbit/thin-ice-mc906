@@ -172,3 +172,13 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# ─── data/levels ────────────────────────────────────────────────────────────────
+# Ignore tudo que estiver diretamente dentro de data/levels/…
+data/levels/*
+
+# …mas NÃO ignore a pasta original_game
+!data/levels/original_game
+# …nem nada do que estiver dentro dela
+!data/levels/original_game/**
+
