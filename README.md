@@ -1,7 +1,7 @@
 ### ▶️ Jogar manualmente:
 
 ```bash
-python3 -m src.scripts.play
+python3 -m src.scripts.play.py
 ```
 
 ---
@@ -9,7 +9,7 @@ python3 -m src.scripts.play
 ### 🤖 Treinar um agente DQN:
 
 ```bash
-python3 -m src.scripts.train
+python3 -m src.scripts.train.py
 ```
 
 ---
