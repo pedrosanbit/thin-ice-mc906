@@ -1,26 +1,21 @@
 # src/script/train.py
-
 import matplotlib.pyplot as plt
 import numpy as np
+import json
+import os
 
 from src.level_generator import LevelGenerator
 from src.env.thin_ice_env import ThinIceEnv
 from src.agents.dqn_agent import DQNAgent
 from src.level_generator import LevelGenerator
 
-import pygame
-import sys
-from src.levels import Level
-from src.game import Game
-from src.utils import draw_game_screen
-
-
 lg_loader = LevelGenerator(
     min_size=4,
-    max_size=6
+    max_size=10
 )
 
-LEVEL_FOLDER = lg_loader.build_random_levels(1000)
+niveis = int(input("Quantos níveis deseja gerar? "))
+LEVEL_FOLDER = lg_loader.build_random_levels(niveis)
 
 env = ThinIceEnv(
     level_folder=LEVEL_FOLDER, 
@@ -70,6 +65,9 @@ for ep in range(EPISODES):
         )
         success_history.append(1)
         tile_ratio_history.append(feitos / total)
+        if (info['level_id'] == niveis-1):
+            print("Treinamento concluído com sucesso!")
+            break
     else:
         print(
             f"[x] Episódio {ep:4d} | Status: FALHOU  | Nível: {info['level_id']:4d} "
@@ -103,3 +101,8 @@ plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig("tile_ratio_per_episode.png")  # Salva no diretório atual
+
+# Salva o modelo treinado
+
+os.makedirs("models", exist_ok=True)
+agent.save("models/dqn_agent.pth")
