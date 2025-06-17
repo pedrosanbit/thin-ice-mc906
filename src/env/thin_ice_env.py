@@ -79,8 +79,8 @@ class ThinIceEnv(gym.Env):
             reward += 0.01
             
         # coleta de chaves
-        if self.game.keys_obtained > self.game.level.start[2]:
-            reward += (self.game.keys_obtained - self.game.level.start[2]) * 0.1 
+        #if self.game.keys_obtained > self.game.level.start[2]:
+        #    reward += (self.game.keys_obtained - self.game.level.start[2]) * 0.1 
         
         # ---------- 3. Verifica término ou travamento ----------
         done = False

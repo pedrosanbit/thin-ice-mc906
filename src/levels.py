@@ -81,7 +81,6 @@ class Level:
         
 
     def load_next_level(self) -> None:
-        print(f"[DEBUG] Avançando para o nível {self.current_level_id} de {self.max_level_id}")
 
 
 
@@ -90,20 +89,15 @@ class Level:
         if self.current_level_id < self.max_level_id:
             self.current_level_id += 1
         else:
-            print(f"DEBUG {self.current_level_id} >= {self.max_level_id}")
             if self.loop_on_finish:
                 self.current_level_id = 0  # Volta ao primeiro nível se o loop for ativado
             else:
                 self.current_level_id = self.max_level_id
-        print(f"[DEBUG] Avançando para o nível {self.current_level_id} de {self.max_level_id}")
         self.load_level()
-        print(f"[DEBUG] Avançando para o nível {self.current_level_id} de {self.max_level_id}")
 
     def reload_level(self) -> None:
         """Recarrega o nível atual."""
-        print(f"[DEBUG-RELOAD A] Avançando para o nível {self.current_level_id} de {self.max_level_id}")
         self.load_level()
-        print(f"[DEBUG-RELOAD B] Avançando para o nível {self.current_level_id} de {self.max_level_id}")
 
 
     def change_folder(self, new_folder: str) -> None:

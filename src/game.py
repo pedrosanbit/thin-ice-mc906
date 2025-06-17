@@ -68,7 +68,7 @@ class Game:
         if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
             # Caso perfeito, verifica se todos os tiles foram coletados
             if self.perfect_score_required:
-                print(f"{self.current_tiles} == {self.level.total_tiles}")
+                #print(f"{self.current_tiles} == {self.level.total_tiles}")
                 if self.current_tiles == self.level.total_tiles:
                     self.load_next_level()
 

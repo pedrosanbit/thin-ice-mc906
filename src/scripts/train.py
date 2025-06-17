@@ -66,14 +66,14 @@ for ep in range(EPISODES):
         feitos = env.game.current_tiles
         print(
             f"[✓] Episódio {ep:4d} | Status: PASSOU  | Nível: {info['level_id']:4d} "
-            f"| Score restante: {1 - info['score_ratio']:.2f} | Resultado: {info['result']} {solved}"
+            f"| Score restante: {1 - info['score_ratio']:.2f} | Resultado: {info['result']}"
         )
         success_history.append(1)
         tile_ratio_history.append(feitos / total)
     else:
         print(
             f"[x] Episódio {ep:4d} | Status: FALHOU  | Nível: {info['level_id']:4d} "
-            f"| Score restante: {1 - info['score_ratio']:.2f} | Resultado: {info['result']} {solved}"
+            f"| Score restante: {1 - info['score_ratio']:.2f} | Resultado: {info['result']}"
         )
         success_history.append(0)
         tile_ratio_history.append(0.0)
