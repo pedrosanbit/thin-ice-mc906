@@ -31,7 +31,16 @@ char_to_level_map = {
     'E': Map.THICK_ICE  # THICK ICE COM BLOCO
 }
 
-level_map_to_char = {v: k for k, v in char_to_level_map.items()}
+level_map_to_char = {
+    Map.EMPTY: '0',
+    Map.WALL: '1',
+    Map.THIN_ICE: '2',
+    Map.THICK_ICE: '3',
+    Map.LOCK: '4',
+    Map.TILE: '5',
+    Map.TELEPORT: '7',
+    Map.FINISH: '9',
+}
 
 color_map = [
     (154, 205, 254),
