@@ -4,6 +4,7 @@ import numpy as np
 from src.levels import Level
 from src.game import Game
 from src.mapping import Map
+from src.levels import Level
 from collections import deque
 
 LEVELS_FOLDER = 'original_game'
@@ -28,6 +29,9 @@ class ThinIceEnv(gym.Env):
         self.obs_shape = (10, 15, 19)
         self.observation_space = spaces.Box(low=0, high=1, shape=self.obs_shape, dtype=np.uint8)
         self.points = 0
+        self.level_folder = 'original_game'
+        self.level_index = 0
+        self.seed = 42
 
         self.reset()
 
