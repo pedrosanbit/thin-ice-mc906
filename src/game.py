@@ -59,11 +59,11 @@ class Game:
 
     def check_next_level(self, level_folder):
         if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
-            self.load_next_level(level_folder)
             self.current_points += self.current_tiles * 2
             self.points = self.current_points
             if self.current_tiles == self.level.total_tiles:
                 self.solved += 1
+            self.load_next_level(level_folder)
             return True
         return False
 
