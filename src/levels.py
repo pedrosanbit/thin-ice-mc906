@@ -164,4 +164,4 @@ def get_level(folder, index):
                 row.append(map_enum.value)
             grid.append(row)
 
-        return Level(grid, start, coin_bags, keys, blocks, total_tiles, teleports)
+        return Level(grid, start, coin_bags, keys, blocks, teleports, total_tiles)
