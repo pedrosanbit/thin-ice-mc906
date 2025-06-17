@@ -37,7 +37,8 @@ class LevelGenerator:
         cy, cx = fy, fx            # posição corrente
         steps = 0
 
-        while steps < self.max_size:
+        max_steps = random.randint(self.min_size, self.max_size)
+        while steps <= max_steps:
             dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
             options = []
             for dy, dx in dirs:
