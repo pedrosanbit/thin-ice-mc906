@@ -8,16 +8,28 @@ from src.env.thin_ice_env import ThinIceEnv
 from src.agents.dqn_agent import DQNAgent
 from src.level_generator import LevelGenerator
 
+import pygame
+import sys
+from src.levels import Level
+from src.game import Game
+from src.utils import draw_game_screen
+
 
 lg_loader = LevelGenerator(
-    min_size=12,
-    max_size=16
+    min_size=4,
+    max_size=6
 )
 
 LEVEL_FOLDER = lg_loader.build_random_levels(1000)
 
-# Inicializa ambiente e agente
-env = ThinIceEnv(level_index=0, level_folder=LEVEL_FOLDER)
+env = ThinIceEnv(
+    level_folder=LEVEL_FOLDER, 
+    level_index=0, 
+    max_steps=300, 
+    render_mode=None, 
+    seed = 42
+)
+
 agent = DQNAgent(
     state_shape=env.observation_space.shape,
     n_actions=env.action_space.n,
@@ -46,17 +58,23 @@ for ep in range(EPISODES):
         total_reward += r
 
         if done or truncated:
-            solved = done
+            solved = (info["result"] == "SUCCESS")
             break
 
     if solved:
         total = env.game.level.total_tiles
         feitos = env.game.current_tiles
-        print(f"[✓] Episódio {ep}: PASSOU — Tiles restantes: {total - feitos} / {total}")
+        print(
+            f"[✓] Episódio {ep:4d} | Status: PASSOU  | Nível: {info['level_id']:4d} "
+            f"| Score restante: {1 - info['score_ratio']:.2f} | Resultado: {info['result']} {solved}"
+        )
         success_history.append(1)
         tile_ratio_history.append(feitos / total)
     else:
-        print(f"[x] Episódio {ep}: FALHOU")
+        print(
+            f"[x] Episódio {ep:4d} | Status: FALHOU  | Nível: {info['level_id']:4d} "
+            f"| Score restante: {1 - info['score_ratio']:.2f} | Resultado: {info['result']} {solved}"
+        )
         success_history.append(0)
         tile_ratio_history.append(0.0)
         

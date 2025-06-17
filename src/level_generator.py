@@ -3,7 +3,7 @@ import random
 from typing import List, Tuple
 
 from src.mapping import Map
-from src.levels import Level, encode_levels_to_txt, get_level
+from src.levels import Level, encode_levels_to_txt
 
 
 class LevelGenerator:
@@ -63,8 +63,11 @@ class LevelGenerator:
             steps += 1
 
         start = (cx, cy)  # (x, y) — nota: encode_levels_to_txt assume (x,y)
-        
-        return grid, start, steps
+        coin_bags = []
+        keys = []
+        blocks = []
+        teleports = []
+        return grid, start, coin_bags, keys, blocks, teleports, steps
 
     def build_random_levels(self, total_levels: int, output_folder = None) -> str:
         if output_folder == None:
@@ -75,7 +78,7 @@ class LevelGenerator:
             success, tries = False, 0
             while not success and tries < self.MAX_ATTEMPTS:
                 tries += 1
-                grid, start, steps = self._random_walk()
+                grid, start, coin_bags, keys, blocks, teleports, steps = self._random_walk()
                 if steps < self.min_size:
                     continue         
 
@@ -84,8 +87,7 @@ class LevelGenerator:
                 if grid[sy][sx] == Map.THICK_ICE.value:
                     continue
 
-                level = Level(grid, start, [], [], [], [])
-                encode_levels_to_txt(level, output_folder, idx)
+                encode_levels_to_txt(output_folder, idx, grid, start, coin_bags, keys, blocks, teleports, steps)
                 print(f"[INFO] Fase {idx:04} gerada com {steps} passos.")
                 idx += 1
                 success = True

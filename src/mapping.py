@@ -31,6 +31,8 @@ char_to_level_map = {
     'E': Map.THICK_ICE  # THICK ICE COM BLOCO
 }
 
+level_map_to_char = {v: k for k, v in char_to_level_map.items()}
+
 color_map = [
     (154, 205, 254),
     (70, 164, 255),

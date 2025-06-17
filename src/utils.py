@@ -31,7 +31,7 @@ def draw_game_screen(game, screen, font):
     screen.fill(WHITE)
 
     # HUD
-    level_text = font.render(f'LEVEL {game.num_level + 1}', True, TEXT)
+    level_text = font.render(f'LEVEL {game.level.current_level_id + 1}', True, TEXT)
     progress_text = font.render(f'{game.current_tiles} / {game.level.total_tiles}', True, TEXT)
     solved_text = font.render(f'SOLVED {game.solved}', True, TEXT)
     points_text = font.render(f'POINTS {game.current_points}', True, TEXT)
@@ -46,6 +46,8 @@ def draw_game_screen(game, screen, font):
         for j in range(GRID_HEIGHT):
             x = i * CELL_SIZE
             y = (j + 1) * CELL_SIZE
+            
+
             pygame.draw.rect(
                 screen,
                 get_color(game.level.grid[j][i]),

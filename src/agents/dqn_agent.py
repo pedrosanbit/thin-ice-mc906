@@ -105,11 +105,11 @@ class DQNAgent:
 
         s, a, r, s_next, d = self.buffer.sample(self.batch_size)
 
-        s       = s.to(self.device)
-        s_next  = s_next.to(self.device)
-        a       = a.to(self.device)
-        r       = r.to(self.device)
-        d       = d.to(self.device)
+        s = s.to(self.device)
+        s_next = s_next.to(self.device)
+        a = a.to(self.device)
+        r = r.to(self.device)
+        d = d.to(self.device)
 
         # Q(s, a)
         q_values = self.policy_net(s).gather(1, a.unsqueeze(1)).squeeze(1)

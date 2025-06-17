@@ -182,3 +182,4 @@ data/levels/*
 # …nem nada do que estiver dentro dela
 !data/levels/original_game/**
 
+/old/

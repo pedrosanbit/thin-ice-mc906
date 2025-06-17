@@ -1,74 +1,128 @@
 # /src/game.py
 
-import random
 
-from src.levels import get_level
+from src.levels import Level
 from src.mapping import Map
 
-MAX_LEVEL = 36
-
 class Game:
-    def __init__(self, num_level, level, player_x, player_y, points, current_points,
-                 keys_obtained, current_tiles, solved, block_mov,
-                 random_levels=False, seed=42):
-        self.num_level = num_level
+    def __init__(
+            self, 
+            level, 
+            perfect_score_required = False,
+            points = 0, 
+            current_points = 0, 
+            solved = 0,
+            seed=42
+        ):
+
+
         self.level = level
-        self.player_x = player_x
-        self.player_y = player_y
+
+        self.perfect_score_required = perfect_score_required
         self.points = points
         self.current_points = current_points
-        self.keys_obtained = keys_obtained
-        self.current_tiles = current_tiles
         self.solved = solved
-        self.block_mov = block_mov
 
-        self.random_levels = random_levels
+        #self.current_tiles = 0
+        #self.player_x = self.level.start[0]
+        #self.player_y = self.level.start[1]
+        #self.keys_obtained = 0
+        #self.block_mov = (None, (0, 0))
+        self.reload_level()
+
         self.seed = seed
 
     def _in_bounds(self, x: int, y: int) -> bool:
         rows = len(self.level.grid)
         cols = len(self.level.grid[0])
         return 0 <= x < cols and 0 <= y < rows
-        
-    def load_level(self, level_folder, next_idx=None):
-        if self.random_levels:
-            random.seed(self.seed + self.num_level)
-            next_idx = random.randint(0, 999)
-        elif next_idx is None:
-            next_idx = (self.num_level + 1) % 1000
-
-        self.num_level = next_idx
-        self.level = get_level(level_folder, self.num_level)
+    
+    def load_new_level_variables(self):
         self.current_tiles = 0
-        self.player_x = self.level.start[0]
-        self.player_y = self.level.start[1]
-        self.keys_obtained = 0
-
-    def reload_level(self, level_folder):
-        self.level = get_level(level_folder, self.num_level)
-        self.current_tiles = 0
+        self.current_points = self.points
         self.player_x = self.level.start[0]
         self.player_y = self.level.start[1]
         self.keys_obtained = 0
         self.block_mov = (None, (0, 0))
-
         
-    def load_next_level(self, level_folder):
-        self.load_level(level_folder)
+    def load_next_level(self):
+        self.current_points += self.current_tiles * 2
+        self.points = self.current_points
+
+        self.solved += 1
+        
+        self.level.load_next_level()
+        self.load_new_level_variables()
+
+    def reload_level(self):
+        self.level.reload_level()
+        self.load_new_level_variables()
 
 
-    def check_next_level(self, level_folder):
+    def check_progress(self):
+        rows = len(self.level.grid)
+        cols = len(self.level.grid[0])
+
+        # Verifica se o jogador chegou ao ponto final
+
         if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
-            self.load_next_level(level_folder)
+            # Caso perfeito, verifica se todos os tiles foram coletados
+            if self.perfect_score_required:
+                print(f"{self.current_tiles} == {self.level.total_tiles}")
+                if self.current_tiles == self.level.total_tiles:
+                    self.load_next_level()
+
+                    return "SUCCESS", 1.0  # Passou com sucesso (perfeito)
+                else:
+                    # Não conseguiu coletar todos os tiles, reinicia a fase
+                    ratio = float(self.current_tiles) / self.level.total_tiles
+                    self.reload_level()
+                    return "NOT_SUFFICIENT", ratio  # Passou sem sucesso
+
+            # Caso não precise do perfeito, só checa o avanço
+            self.load_next_level()
+
+            return "SUCCESS", 1.0  # Passou normalmente
+
+        # Verifica se o jogador ficou sem movimentos válidos (Game Over)
+        directions = [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1)
+        ]
+        for dr, dc in directions:
+            nr, nc = self.player_y + dr, self.player_x + dc
+            if 0 <= nr < rows and 0 <= nc < cols:
+                # Lock is openable
+                if self.level.grid[nr][nc] == Map.LOCK.value and self.keys_obtained > 0:
+                    return "CONTINUE", 0
+                # Walkable tile available
+                if self.level.grid[nr][nc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value) and (nc, nr) not in self.level.blocks:
+                    return "CONTINUE", 0
+                # Block is pushable
+                if (nc, nr) in self.level.blocks and self.level.grid[nr + dr][nc + dc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
+                    return "CONTINUE", 0
+
+        # Caso não tenha movimentos válidos, game over
+        self.reload_level()
+        return "GAME_OVER", 0  
+
+
+    """
+
+    def check_next_level(self):
+        if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
             self.current_points += self.current_tiles * 2
             self.points = self.current_points
             if self.current_tiles == self.level.total_tiles:
                 self.solved += 1
+            self.load_next_level()
             return True
         return False
 
     
-    def check_game_over(self, level_folder):
+    def check_game_over(self):
         rows = len(self.level.grid)
         cols = len(self.level.grid[0])
         directions = [
@@ -89,10 +143,11 @@ class Game:
                 # Block is pushable
                 if (nc,nr) in self.level.blocks and self.level.grid[nr + dr][nc + dc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
                     return
-        self.current_points = self.points
-        self.keys_obtained = 0
-        self.load_level(level_folder, self.num_level)
+                
+        self.reload_level()
 
+    """
+    
     def check_coin_bag(self):
         for coin_bag in self.level.coin_bags:
             if self.player_x == coin_bag[0] and self.player_y == coin_bag[1]:
