@@ -24,6 +24,11 @@ class Game:
 
         self.random_levels = random_levels
         self.seed = seed
+
+    def _in_bounds(self, x: int, y: int) -> bool:
+        rows = len(self.level.grid)
+        cols = len(self.level.grid[0])
+        return 0 <= x < cols and 0 <= y < rows
         
     def load_level(self, level_folder, next_idx=None):
         if self.random_levels:
@@ -137,6 +142,10 @@ class Game:
     def move_player(self, direction):
         new_x = self.player_x + direction[0]
         new_y = self.player_y + direction[1]
+
+        # ---------- Limites do grid ----------
+        if not self._in_bounds(new_x, new_y):
+            return                       
 
         if self.level.grid[new_y][new_x] in (Map.WALL.value, Map.LOCK.value, Map.WATER.value):
             return
