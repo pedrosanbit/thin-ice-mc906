@@ -2,7 +2,7 @@
 
 import gymnasium as gym
 import numpy as np
-from pygame import display
+import pygame
 from src.game import Game
 from src.levels import Level
 from src.mapping import Map
@@ -66,12 +66,23 @@ class ThinIceEnv(gym.Env):
         invalid = (prev_x, prev_y) == new_pos  
         reward = 0
 
+        # ---------- 2. Recompensas e Penalidades imediatas ----------
+        reward = 0.0 if invalid else -0.01                    # custo do passo
+        if not invalid and new_pos not in self.visited:       # explorou tile novo
+            reward += 0.05
+            self.visited.add(new_pos)
 
         # Recompensa por pontos coletados
         if self.game.current_points > prev_points:
-            reward += (self.game.current_points - prev_points) * 0.02  # Maior recompensa por pontos
-
-        # Recompensas por progresso
+            reward += (self.game.current_points - prev_points) * 0.01
+        if self.game.current_tiles  > prev_tiles:
+            reward += 0.01
+            
+        # coleta de chaves
+        if self.game.keys_obtained > self.game.level.start[2]:
+            reward += (self.game.keys_obtained - self.game.level.start[2]) * 0.1 
+        
+        # ---------- 3. Verifica término ou travamento ----------
         done = False
         result, score_ratio = self.game.check_progress()
         if result == "SUCCESS":
@@ -127,7 +138,7 @@ class ThinIceEnv(gym.Env):
 
     def render(self, mode="human"):
         if mode == "rgb_array":
-            return pygame.surfarray.array3d(display.get_surface()).transpose(1, 0, 2)
+            return pygame.surfarray.array3d(pygame.display.get_surface()).transpose(1, 0, 2)
         if mode == "human":
             from old.main import draw_screen  # 👈 função que redesenha a tela
             draw_screen(self.game)  # 👈 chama a renderização visual
