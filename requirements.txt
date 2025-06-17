@@ -8,3 +8,4 @@ sb3-contrib>=1.7
 pygame~=2.6.1
 stable_baselines3~=2.6.0
 pillow~=11.2.1
+sb3-contrib
