@@ -81,9 +81,6 @@ class Level:
         
 
     def load_next_level(self) -> None:
-
-
-
         """Avança para o próximo nível."""
 
         if self.current_level_id < self.max_level_id:

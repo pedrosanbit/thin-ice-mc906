@@ -1,7 +1,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-from src.levels import get_level
+from src.levels import Level
 from src.game import Game
 from src.mapping import Map
 from collections import deque
@@ -34,10 +34,15 @@ class ThinIceEnv(gym.Env):
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
 
-        level = get_level(LEVELS_FOLDER, 0)
-        self.game = Game(0, level, level.start[0], level.start[1], 0, 0, 0, 0, 0, (None, (0,0)))
+        level = Level(LEVELS_FOLDER, 0)
+        print(level)
+        self.game = Game(
+                        level = level,
+                        perfect_score_required = False,
+                    )
         self.visited = set()
         return self._get_obs(), {}
+
 
     def step(self, action):
         direction = [(0, -1), (0, 1), (-1, 0), (1, 0)][action]
@@ -48,14 +53,13 @@ class ThinIceEnv(gym.Env):
         while moving_block != None:
             self.game.move_block(moving_block, block_direction)
 
-        next_level = self.game.check_next_level(LEVELS_FOLDER)
-        if not next_level: self.game.check_game_over(LEVELS_FOLDER)
+        self.game.check_progress()
 
         obs = self._get_obs()
         reward = self._compute_reward()
 
-        if (self.game.num_level, self.game.player_x, self.game.player_y) not in self.visited:
-            self.visited.add((self.game.num_level, self.game.player_x, self.game.player_y))
+        if (self.game.level.current_level_id, self.game.player_x, self.game.player_y) not in self.visited:
+            self.visited.add((self.game.level.current_level_id, self.game.player_x, self.game.player_y))
 
         done = self._is_done()
         info = {}
@@ -64,7 +68,7 @@ class ThinIceEnv(gym.Env):
 
     def _is_done(self):
         tile = self.game.level.grid[self.game.player_y][self.game.player_x]
-        return tile == Map.FINISH.value and self.game.num_level == 36
+        return tile == Map.FINISH.value and self.game.level.current_level_id == 36
 
     def _compute_reward(self):
         reward = 0

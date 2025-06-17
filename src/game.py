@@ -68,7 +68,6 @@ class Game:
         if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
             # Caso perfeito, verifica se todos os tiles foram coletados
             if self.perfect_score_required:
-                #print(f"{self.current_tiles} == {self.level.total_tiles}")
                 if self.current_tiles == self.level.total_tiles:
                     self.load_next_level()
 
@@ -108,46 +107,6 @@ class Game:
         self.reload_level()
         return "GAME_OVER", 0  
 
-
-    """
-
-    def check_next_level(self):
-        if self.level.grid[self.player_y][self.player_x] == Map.FINISH.value:
-            self.current_points += self.current_tiles * 2
-            self.points = self.current_points
-            if self.current_tiles == self.level.total_tiles:
-                self.solved += 1
-            self.load_next_level()
-            return True
-        return False
-
-    
-    def check_game_over(self):
-        rows = len(self.level.grid)
-        cols = len(self.level.grid[0])
-        directions = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1)
-        ]
-        for dr, dc in directions:
-            nr, nc = self.player_y + dr, self.player_x + dc
-            if 0 <= nr < rows and 0 <= nc < cols:
-                # Lock is openable
-                if self.level.grid[nr][nc] == Map.LOCK.value and self.keys_obtained > 0:
-                    return
-                # Walkable tile available
-                if self.level.grid[nr][nc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value) and (nc,nr) not in self.level.blocks:
-                    return
-                # Block is pushable
-                if (nc,nr) in self.level.blocks and self.level.grid[nr + dr][nc + dc] not in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
-                    return
-                
-        self.reload_level()
-
-    """
-    
     def check_coin_bag(self):
         for coin_bag in self.level.coin_bags:
             if self.player_x == coin_bag[0] and self.player_y == coin_bag[1]:
