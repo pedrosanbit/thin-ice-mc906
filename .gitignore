@@ -182,3 +182,8 @@ data/levels/*
 # …nem nada do que estiver dentro dela
 !data/levels/original_game/**
 
+# nem ignore a pasta validation_set
+!data/levels/validation_set
+# …nem nada do que estiver dentro dela
+!data/levels/validation_set/**
+
