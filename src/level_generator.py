@@ -31,7 +31,7 @@ class LevelGenerator:
             for x in range(self.GRID_LENGTH):
                 if (x, y) == (sx, sy):
                     continue
-                if grid[y][x] in (Map.THIN_ICE.value):
+                if grid[y][x] == Map.THIN_ICE.value:
                     candidates.append((x, y))
         return [random.choice(candidates)] if candidates else []
 
