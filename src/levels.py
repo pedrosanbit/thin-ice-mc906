@@ -56,7 +56,7 @@ class Level:
             1 for row in self.grid for val in row if val == Map.THIN_ICE.value
         ) + 2 * sum(
             1 for row in self.grid for val in row if val == Map.THICK_ICE.value
-        )
+        ) + sum([1 if self.teleports else 0])  # Considera teletransporte como um tile
 
     def compute_total_points(self) -> int:
         """Calcula a pontuação total, considerando gelo fino, grosso, sacos de moedas e outros itens."""
