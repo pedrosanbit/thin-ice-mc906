@@ -188,3 +188,5 @@ data/levels/*
 # …nem nada do que estiver dentro dela
 !data/levels/validation_set/**
 
+models/freitas/
+plots/
