@@ -70,11 +70,11 @@ class ThinIceEnv(gym.Env):
         # 👇 Bonificação por explorar novo tile
         if not invalid and new_pos not in self.visited:
             self.visited.add(new_pos)
-            reward += 0.05
+            reward += 0.01
 
         # Recompensa por derretimento de blocos
         if self.game.current_tiles > prev_tiles:
-            reward += (self.game.current_tiles - prev_tiles) * 0.05
+            reward += (self.game.current_tiles - prev_tiles) * 0.1
 
         done = False
         result, score_ratio = self.game.check_progress()
@@ -83,10 +83,10 @@ class ThinIceEnv(gym.Env):
             reward += 1.0
             done = True
         elif result == "NOT_SUFFICIENT":
-            reward -= 0.3 * (1 - score_ratio)
+            reward -= 0.1 * (1 - score_ratio)
             done = True
         elif result == "GAME_OVER":
-            reward -= 1.0 + (1 - score_ratio)
+            reward -= 0.5 + (1 - score_ratio)
             done = True
 
         truncated = self.step_count >= self.max_steps
@@ -102,8 +102,8 @@ class ThinIceEnv(gym.Env):
         if (done or truncated) and self.allow_failure_progression:
             self.game.load_next_level()
 
-        if self.game.level.total_tiles > 20:
-            reward += np.random.normal(0, 0.01)  # média 0, desvio 0.01
+        #if self.game.level.total_tiles > 20:
+        #    reward += np.random.normal(0, 0.01)  # média 0, desvio 0.01
 
         return self._get_obs(), reward, done, truncated, info
 

@@ -16,8 +16,8 @@ STEPS_PER_EP = 400
 INITIAL_MEAN = 6
 STD_RATIO = 0.5
 MAX_MEAN = 160
-WINDOW_SIZE = 300
-GROWTH = 1.25
+WINDOW_SIZE = 100
+GROWTH = 1.5
 SUCCESS_THRESHOLD = 0.85
 BUFFER_SIZE = 50_000
 UPDATE_FREQ = 4
@@ -162,6 +162,8 @@ def curriculum_loop(env, agent):
     for round_id in range(200_000):
         lg = LevelGenerator(mean_steps=int(mean_steps), std_steps=STD_RATIO)
         level_dir = lg.build_random_levels(EPISODES_PER_ROUND, extra_levels=100)
+
+        env.change_level_folder(level_dir)
 
         batch_results = []
         for ep in range(EPISODES_PER_ROUND):
