@@ -13,13 +13,14 @@ class LevelGenerator:
     GRID_LENGTH = 19
     MAX_ATTEMPTS = 20
 
-    def __init__(self, mean_steps: int, std_ratio: float = 0.2):
+    def __init__(self, mean_steps: int, std_ratio: float = 0.2, thick_ice_prob: float = 0.15,):
         """
         mean_steps: número médio de passos esperados
         std_ratio: desvio padrão em relação à média (ex: 0.2 => 20%)
         """
         self.mean_steps = mean_steps
         self.std_steps = max(1, int(std_ratio * mean_steps))  # evita std = 0
+        self.thick_ice_prob = thick_ice_prob
 
     def _random_walk(self, use_uniform=False) -> Tuple[List[List[int]], Tuple[int, int], int]:
         grid = [[Map.WALL.value for _ in range(self.GRID_LENGTH)]
@@ -41,7 +42,12 @@ class LevelGenerator:
                 1, 300
             ))
 
-        while steps <= max_steps:
+        tiles_samples = [
+            Map.THICK_ICE.value for _ in range (int(self.thick_ice_prob * max_steps))
+        ] + [
+            Map.THIN_ICE.value for _ in range(max_steps - int(self.thick_ice_prob * max_steps))
+        ] # Se forem gerados muito gelos finos, a probabilidade de gerar um gelo grosso vai aumentando com teto máximo de thick_ice_prob
+        while steps < max_steps:
             dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
             options = []
             for dy, dx in dirs:
@@ -51,6 +57,9 @@ class LevelGenerator:
                 tile = grid[ny][nx]
                 if tile in (Map.FINISH.value, Map.THICK_ICE.value):
                     continue
+                if tile == Map.THIN_ICE.value:
+                    if random.choice(tiles_samples) != Map.THICK_ICE.value:
+                        continue                      # (4) considera a probabilidade de gerar um gelo grosso
                 options.append((ny, nx))
 
             if not options:
@@ -59,8 +68,10 @@ class LevelGenerator:
             cy, cx = random.choice(options)
             if grid[cy][cx] == Map.WALL.value:
                 grid[cy][cx] = Map.THIN_ICE.value
+                tiles_samples.pop(-1)  # remove um gelo fino do espaço amostral
             elif grid[cy][cx] == Map.THIN_ICE.value:
                 grid[cy][cx] = Map.THICK_ICE.value
+                tiles_samples.pop(0)  # remove um gelo grosso do espaço amostral
 
             steps += 1
 
