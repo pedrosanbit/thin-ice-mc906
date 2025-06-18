@@ -13,9 +13,10 @@ class LevelGenerator:
     GRID_LENGTH = 19
     MAX_ATTEMPTS = 20
 
-    def __init__(self, mean_steps: int, std_steps: float = 0.2):
+    def __init__(self, mean_steps: int, std_steps: float = 0.2, thick_ice_prob: float = 0.15,):
         self.mean_steps = mean_steps
         self.std_steps= std_steps
+        self.thick_ice_prob = thick_ice_prob
 
     def add_single_coin_bag(self, grid, start) -> List[Tuple[int, int]]:
         """Adiciona exatamente um saco de moedas em uma célula válida (não WALL, START ou FINISH)."""
@@ -54,7 +55,12 @@ class LevelGenerator:
 
         path = [(cy, cx)]  # salva o caminho principal
 
-        while steps <= max_steps:
+        tiles_samples = [
+            Map.THICK_ICE.value for _ in range (int(self.thick_ice_prob * max_steps))
+        ] + [
+            Map.THIN_ICE.value for _ in range(max_steps - int(self.thick_ice_prob * max_steps))
+        ] # Se forem gerados muito gelos finos, a probabilidade de gerar um gelo grosso vai aumentando com teto máximo de thick_ice_prob
+        while steps < max_steps:
             probs = [0.0] * 4
             probs[dir_idx] = 0.4
             probs[(dir_idx + 1) % 4] = 0.25
@@ -73,6 +79,9 @@ class LevelGenerator:
                 if 0 <= ny < self.GRID_HEIGHT and 0 <= nx < self.GRID_LENGTH:
                     tile = grid[ny][nx]
                     if tile not in (Map.FINISH.value, Map.THICK_ICE.value):
+                        if tile == Map.THIN_ICE.value:
+                            if random.choice(tiles_samples) != Map.THICK_ICE.value:
+                                continue                      # (4) considera a probabilidade de gerar um gelo grosso
                         options.append((i, ny, nx))
 
             if not options:
@@ -86,8 +95,10 @@ class LevelGenerator:
 
             if grid[cy][cx] == Map.WALL.value:
                 grid[cy][cx] = Map.THIN_ICE.value
+                tiles_samples.pop(-1)  # remove um gelo fino do espaço amostral
             elif grid[cy][cx] == Map.THIN_ICE.value:
                 grid[cy][cx] = Map.THICK_ICE.value
+                tiles_samples.pop(0)  # remove um gelo grosso do espaço amostral
 
             path.append((cy, cx))
             steps += 1
