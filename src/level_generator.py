@@ -70,7 +70,6 @@ class LevelGenerator:
                         grid[ny][nx] = Map.TELEPORT.value
                         teleports.append((nx, ny))
                         cy, cx = ny, nx 
-                        steps -= 1 # Quando sai do teleporte estava contando como um gelo
                         continue  # reinicia o loop após criar o teleporte
 
             dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
