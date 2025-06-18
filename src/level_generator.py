@@ -103,15 +103,6 @@ class LevelGenerator:
             path.append((cy, cx))
             steps += 1
 
-        # 🔁 Injeção opcional de bifurcação
-        if len(path) > 4 and random.random() < 0.5:
-            by, bx = path[len(path)//2]
-            for dy, dx in DIRECTIONS:
-                ny, nx = by + dy, bx + dx
-                if 0 <= ny < self.GRID_HEIGHT and 0 <= nx < self.GRID_LENGTH:
-                    if grid[ny][nx] == Map.WALL.value:
-                        grid[ny][nx] = Map.THIN_ICE.value
-
         start = (cx, cy)
         return grid, start, [], [], [], [], steps
 
