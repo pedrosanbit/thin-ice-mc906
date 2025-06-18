@@ -67,7 +67,7 @@ class ThinIceEnv(gym.Env):
         reward = 0
 
         # ---------- 2. Recompensas e Penalidades imediatas ----------
-        reward = 0.0 if invalid else -0.01                    # custo do passo
+        reward = 0.2 if not invalid else -0.05                    # custo do passo
         if not invalid and new_pos not in self.visited:       # explorou tile novo
             reward += 0.05
             self.visited.add(new_pos)
@@ -85,14 +85,17 @@ class ThinIceEnv(gym.Env):
         # ---------- 3. Verifica término ou travamento ----------
         done = False
         result, score_ratio = self.game.check_progress()
+        # score_ratio float(self.current_tiles) / self.level.total_tiles
         if result == "SUCCESS":
-            reward += 1.0  # Grande recompensa por completar com sucesso
+            #print(f"SUCESS: {1.0} {score_ratio}")
+            #reward += 1  # Grande recompensa por completar com sucesso
+            reward += 1.0
             done = True
         elif result == "NOT_SUFFICIENT":
-            reward += 0.5 * score_ratio - 0.1  # Penalidade leve por não completar perfeitamente
+            reward += 0.5 * score_ratio - 1.0
             done = True
         elif result == "GAME_OVER":
-            reward -= 0.5  # Penalidade por falha
+            reward -= 1.0 + (1 - score_ratio)
             done = True
             
 

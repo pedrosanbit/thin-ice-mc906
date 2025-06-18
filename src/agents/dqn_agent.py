@@ -38,14 +38,14 @@ class DQNAgent:
         state_shape,
         n_actions,
         device="cuda" if torch.cuda.is_available() else "cpu",
-        buffer_size=100_000,
+        buffer_size=500_000,
         gamma=0.99,
         lr=1e-4,
-        batch_size=64,
-        update_target_every=1000,
+        batch_size=128,
+        update_target_every=5000,
         epsilon_start=1.0,
         epsilon_end=0.05,
-        epsilon_decay=10_000,
+        epsilon_decay=50_000,
         double_dqn=True
     ):
         self.device = device
@@ -55,19 +55,17 @@ class DQNAgent:
         self.update_target_every = update_target_every
         self.double_dqn = double_dqn
 
-        # redes
         self.policy_net = CnnQNet(state_shape[0], n_actions).to(device)
         self.target_net = CnnQNet(state_shape[0], n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
-        self.loss_fn = nn.MSELoss()
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5000, gamma=0.9)
+        self.loss_fn = nn.SmoothL1Loss()
 
-        # replay
         self.buffer = ReplayBuffer(buffer_size)
 
-        # epsilon-greedy
         self.epsilon = epsilon_start
         self.epsilon_min = epsilon_end
         self.epsilon_decay = epsilon_decay
@@ -83,7 +81,7 @@ class DQNAgent:
 
         valid_actions = np.where(action_mask)[0]
         if len(valid_actions) == 0:
-            return random.randint(0, self.n_actions - 1)  # fallback de segurança
+            return random.randint(0, self.n_actions - 1)
 
         if random.random() < eps_threshold:
             return np.random.choice(valid_actions)
@@ -92,7 +90,6 @@ class DQNAgent:
         with torch.no_grad():
             q_values = self.policy_net(state_tensor)[0].cpu().numpy()
 
-        # Máscara: -inf para ações inválidas
         q_values[~action_mask] = -np.inf
         return int(np.argmax(q_values))
 
@@ -111,10 +108,8 @@ class DQNAgent:
         r = r.to(self.device)
         d = d.to(self.device)
 
-        # Q(s, a)
         q_values = self.policy_net(s).gather(1, a.unsqueeze(1)).squeeze(1)
 
-        # Q_target(s', a') usando Double DQN
         with torch.no_grad():
             if self.double_dqn:
                 a_max = self.policy_net(s_next).argmax(dim=1, keepdim=True)
@@ -129,8 +124,8 @@ class DQNAgent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        self.scheduler.step()
 
-        # atualização da target net
         if self.step_count % self.update_target_every == 0:
             self.target_net.load_state_dict(self.policy_net.state_dict())
 
@@ -140,3 +135,4 @@ class DQNAgent:
     def load(self, path):
         self.policy_net.load_state_dict(torch.load(path, map_location=self.device))
         self.target_net.load_state_dict(self.policy_net.state_dict())
+
