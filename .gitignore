@@ -189,4 +189,4 @@ data/levels/*
 !data/levels/validation_set/**
 
 models/freitas/
-plot/
+plots/
