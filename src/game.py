@@ -164,13 +164,6 @@ class Game:
         if self.level.grid[new_y][new_x] in (Map.WALL.value, Map.LOCK.value, Map.WATER.value):
             return
         
-        if self.level.grid[new_y][new_x] == Map.TELEPORT.value:
-            new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
-            for teleport in self.level.teleports:
-                self.level.grid[teleport[1]][teleport[0]] = Map.TILE.value
-            self.player_x = new_x
-            self.player_y = new_y
-        
         if (new_x, new_y) in (self.level.blocks):
             if self.level.grid[new_y + direction[1]][new_x + direction[0]] in (Map.WALL.value, Map.WATER.value, Map.LOCK.value):
                 return
@@ -189,6 +182,8 @@ class Game:
             new_x, new_y = self.level.teleports[1 - self.level.teleports.index((new_x, new_y))]
             for teleport in self.level.teleports:
                 self.level.grid[teleport[1]][teleport[0]] = Map.TILE.value
+            self.player_x = new_x
+            self.player_y = new_y
 
         self.player_x = new_x
         self.player_y = new_y
