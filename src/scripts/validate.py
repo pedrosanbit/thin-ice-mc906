@@ -20,7 +20,7 @@ clock = pygame.time.Clock()
 # Carrega ambiente e agente
 env = ThinIceEnv(
     level_folder=LEVEL_FOLDER,
-    level_index=0,
+    level_index=6,
     max_steps=STEPS_PER_EP,
     render_mode=None,
     seed=42
@@ -31,7 +31,7 @@ agent = DQNAgent(
     n_actions=env.action_space.n,
 )
 
-model_path = "models/freitas/dqn_agent.pth"
+model_path = "models/freitas/dqn_agent_32.pth"
 assert os.path.exists(model_path), f"Modelo não encontrado em {model_path}"
 agent.load(model_path)
 print(f"[✓] Modelo carregado de {model_path}")

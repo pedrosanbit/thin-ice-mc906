@@ -1,22 +1,134 @@
-
-import matplotlib.pyplot as plt
-import numpy as np
 import os
+import csv
+import numpy as np
+import matplotlib.pyplot as plt
+from src.env.thin_ice_env import ThinIceEnv
+from src.level_generator import LevelGenerator
+from src.agents.dqn_agent import DQNAgent
+from src.utils import draw_game_screen, init_screen
+import pygame
 
-def plot_batch_summary(results: list[str], mean_steps: float, round_id: int, save_dir: str = "plots"):
+
+# ------------------ Hiperparâmetros e Configuração ------------------
+
+EPISODES_PER_ROUND = 400
+STEPS_PER_EP = 400
+INITIAL_MEAN = 6
+STD_RATIO = 0.5
+MAX_MEAN = 160
+WINDOW_SIZE = 300
+GROWTH = 1.25
+SUCCESS_THRESHOLD = 0.85
+BUFFER_SIZE = 50_000
+UPDATE_FREQ = 4
+MIN_BUFFER_SIZE = 1000
+
+USE_VALIDATION = False
+USE_PYGAME = False
+ALLOW_FAILURE_PROGRESSION = False
+
+
+# ------------------ Utilitários ------------------
+
+def setup_directories():
+    os.makedirs("plots", exist_ok=True)
+    os.makedirs("models/freitas", exist_ok=True)
+
+
+def initialize_environment_and_agent():
+    env = ThinIceEnv(
+        level_folder="original_game",
+        level_index=0,
+        max_steps=STEPS_PER_EP,
+        render_mode=None,
+        seed=42,
+        allow_failure_progression=ALLOW_FAILURE_PROGRESSION
+    )
+
+    agent = DQNAgent(
+        state_shape=env.observation_space.shape,
+        n_actions=env.action_space.n,
+        buffer_size=BUFFER_SIZE
+    )
+
+    model_path = "models/freitas/dqn_agent.pth"
+    if os.path.exists(model_path):
+        print(f"[✓] Carregando modelo salvo de {model_path}")
+        agent.load(model_path)
+    else:
+        print("[i] Nenhum modelo salvo encontrado. Treinamento começará do zero.")
+    
+    return env, agent
+
+
+def run_episode(env, agent):
+    s, info = env.reset()
+    total_reward, solved = 0, False
+
+    for t in range(STEPS_PER_EP):
+        a = agent.act(s, info["action_mask"])
+        s_next, r, done, truncated, info = env.step(a)
+
+        if not info["invalid"]:
+            agent.remember(s, a, r, s_next, done or truncated)
+
+        if len(agent.buffer) > MIN_BUFFER_SIZE and t % UPDATE_FREQ == 0:
+            agent.update()
+
+        s = s_next
+        total_reward += r
+
+        if done or truncated:
+            solved = info["result"] == "SUCCESS"
+            break
+
+    return info, solved
+
+
+def validate_on_original_game(agent, max_steps=300) -> float:
+    folder_name = "original_game_augmented"
+    path_folder = os.path.join("data/levels/", folder_name)
+    
+    files = sorted(
+        f for f in os.listdir(path_folder)
+        if f.endswith(".txt") and int(f.split("_")[1].split(".")[0]) > 2
+    )
+
+    successes = 0
+    for i, _ in enumerate(files):
+        env = ThinIceEnv(
+            level_folder=folder_name,
+            level_index=i,
+            max_steps=max_steps,
+            render_mode=None,
+            seed=42,
+            allow_failure_progression=True
+        )
+        s, info = env.reset()
+        for _ in range(max_steps):
+            a = agent.act(s, info["action_mask"])
+            s, r, done, truncated, info = env.step(a)
+            if done or truncated:
+                break
+        if info["result"] == "SUCCESS":
+            successes += 1
+
+    return successes / len(files)
+
+
+def plot_batch_summary(results, mean_steps, round_id, val_success_ratio, save_dir="plots"):
     os.makedirs(save_dir, exist_ok=True)
-
-    # Conta os tipos de resultado
     total = len(results)
     success = results.count("SUCCESS") / total
     not_sufficient = results.count("NOT_SUFFICIENT") / total
     game_over = results.count("GAME_OVER") / total
 
-    # Gráfico de barras para proporções
     plt.figure(figsize=(8, 4))
-    plt.bar(["SUCCESS", "NOT_SUFFICIENT", "GAME_OVER"],
-            [success, not_sufficient, game_over],
-            color=["green", "orange", "red"])
+    labels = ["SUCCESS", "NOT_SUFFICIENT", "GAME_OVER", "VALIDAÇÃO"]
+    values = [success, not_sufficient, game_over, val_success_ratio]
+    colors = ["green", "orange", "red", "blue"]
+
+    plt.bar(labels, values, color=colors)
     plt.title(f"Distribuição de Resultados - Round {round_id} (µ={int(mean_steps)})")
     plt.ylim(0, 1)
     plt.ylabel("Proporção")
@@ -24,165 +136,80 @@ def plot_batch_summary(results: list[str], mean_steps: float, round_id: int, sav
     plt.savefig(f"{save_dir}/round_{round_id:02d}_result_distribution.png")
     plt.close()
 
-    # Salva a média de passos (caso queira plottar depois externamente)
     with open(f"{save_dir}/mean_steps_log.txt", "a") as f:
         f.write(f"{round_id},{mean_steps:.2f}\n")
 
 
-import matplotlib.pyplot as plt
-import numpy as np
-import json
-import os
+def save_round_summary_csv(round_id, batch_results, val_success_ratio, save_path="round_summary.csv"):
+    success = batch_results.count("SUCCESS")
+    not_sufficient = batch_results.count("NOT_SUFFICIENT")
+    game_over = batch_results.count("GAME_OVER")
+    total = len(batch_results)
 
-import shutil
-import random
-
-import pygame
-from src.utils import init_screen, draw_game_screen
-from src.level_generator import LevelGenerator
-from src.env.thin_ice_env import ThinIceEnv
-from src.agents.dqn_agent import DQNAgent
-
-
-EPISODES_PER_ROUND = 300
-STEPS_PER_EP = 400
-INITIAL_MEAN = 4
-STD_RATIO = 0.2
-MAX_MEAN = 250
-WINDOW_SIZE = 500
-GROWTH = 1.05
-SUCCESS_THRESHOLD = 0.93
-
-USE_PYGAME = False
-
-if USE_PYGAME:
-    screen, font = init_screen()
-    clock = pygame.time.Clock()
+    file_exists = os.path.exists(save_path)
+    with open(save_path, mode="a", newline="") as file:
+        writer = csv.writer(file)
+        if not file_exists:
+            writer.writerow(["round", "success", "not_sufficient", "game_over", "total", "val_success_ratio"])
+        writer.writerow([round_id, success, not_sufficient, game_over, total, val_success_ratio])
 
 
-mean_steps = INITIAL_MEAN
-success_history = []
-tile_ratio_history = []
+def curriculum_loop(env, agent):
+    mean_steps = INITIAL_MEAN
+    success_history = []
+    tile_ratio_history = []
 
-# Inicializa ambiente e agente
-env = ThinIceEnv(
-    level_folder="original_game",
-    level_index=0,
-    max_steps=STEPS_PER_EP,
-    render_mode=None,
-    seed=42
-)
+    for round_id in range(200_000):
+        lg = LevelGenerator(mean_steps=int(mean_steps), std_steps=STD_RATIO)
+        level_dir = lg.build_random_levels(EPISODES_PER_ROUND, extra_levels=100)
 
-agent = DQNAgent(
-    state_shape=env.observation_space.shape,
-    n_actions=env.action_space.n,
-)
+        batch_results = []
+        for ep in range(EPISODES_PER_ROUND):
+            info, solved = run_episode(env, agent)
+            batch_results.append(info["result"])
+            success_history.append(int(solved))
+            tile_ratio_history.append(env.game.current_tiles / env.game.level.total_tiles if solved else 0.0)
 
-model_path = "dqn_agent_04.4.pth"
-if os.path.exists(model_path):
-    print(f"[✓] Carregando modelo salvo de {model_path}")
-    agent.load(model_path)
-else:
-    print("[i] Nenhum modelo salvo encontrado. Treinamento começará do zero.")
+        val_ratio = validate_on_original_game(agent) if USE_VALIDATION else 0.0
 
+        success_rate = batch_results.count("SUCCESS") / EPISODES_PER_ROUND
+        not_sufficient_rate = batch_results.count("NOT_SUFFICIENT") / EPISODES_PER_ROUND
+        game_over_rate = batch_results.count("GAME_OVER") / EPISODES_PER_ROUND
 
-# ------------------ Loop de Curriculum Adaptativo ------------------
-for curriculum_round in range(2000):
-    print(f"\n[Currículo {curriculum_round}] Gerando fases com média ~{int(mean_steps)}")
-    lg = LevelGenerator(mean_steps=int(mean_steps), std_ratio=STD_RATIO)
-    level_dir = lg.build_random_levels(EPISODES_PER_ROUND)
-    env.change_level_folder(level_dir)
-    env.level_index = 0
+        print(
+            f"[✓] Round {round_id} | µ={int(mean_steps)} | "
+            f"Treino: SUCCESS={success_rate:.2%}, NOT_SUFFICIENT={not_sufficient_rate:.2%}, GAME_OVER={game_over_rate:.2%} | "
+            f"Validação: {val_ratio:.2f} | Últimos {WINDOW_SIZE}: {np.mean(success_history[-WINDOW_SIZE:]):.2f}"
+        )
 
-    batch_results =[]
+        plot_batch_summary(batch_results, mean_steps, round_id, val_ratio)
+        save_round_summary_csv(round_id, batch_results, val_ratio)
 
-    for ep in range(EPISODES_PER_ROUND):
-        s, info = env.reset()
-        total_reward = 0
-        solved = False
+        recent_success = np.mean(success_history[-WINDOW_SIZE:])
+        if recent_success > SUCCESS_THRESHOLD and mean_steps < MAX_MEAN:
+            mean_steps = min(int(mean_steps * GROWTH), MAX_MEAN)
+            print(f"↑ Aumentando mean_steps para {int(mean_steps)}")
+        elif recent_success < 0.3 and mean_steps > INITIAL_MEAN:
+            mean_steps = max(int(mean_steps * 0.9), INITIAL_MEAN)
+            print(f"↓ Reduzindo mean_steps para {int(mean_steps)}")
 
-        for t in range(STEPS_PER_EP):
-            a = agent.act(s, info["action_mask"])
-            s_next, r, done, truncated, info = env.step(a)
+        model_path = f"models/freitas/dqn_agent_{int(mean_steps)}.pth"
+        agent.save(model_path)
 
-            if USE_PYGAME:
-                draw_game_screen(env.game, screen, font)
-                pygame.display.flip()
-                clock.tick(10)
-
-            if not info["invalid"]:
-                agent.remember(s, a, r, s_next, done or truncated)
-
-            agent.update()
-            s = s_next
-            total_reward += r
-
-            if done or truncated:
-                solved = (info["result"] == "SUCCESS")
-                break
-
-        batch_results.append(info["result"])
-
-        if solved:
-            total = env.game.level.total_tiles
-            feitos = env.game.current_tiles
-            print(f"[✓] Ep {ep:4d} | µ={int(mean_steps):3d} | Tiles: {1 - info['score_ratio']:.2f} | Resultado: {info['result']}")
-            success_history.append(1)
-            tile_ratio_history.append(feitos / total)
-        else:
-            print(f"[x] Ep {ep:4d} | µ={int(mean_steps):3d} | Tiles: {1 - info['score_ratio']:.2f} | Resultado: {info['result']}")
-            success_history.append(0)
-            tile_ratio_history.append(0.0)
+        if mean_steps >= MAX_MEAN:
+            print("🎯 Curriculum finalizado com sucesso!")
+            break
 
 
-    plot_batch_summary(batch_results, mean_steps, curriculum_round)
-
-    # Avaliação e progressão do currículo
-    recent_success = np.mean(success_history[-WINDOW_SIZE:])
-    print(f"[Currículo {curriculum_round}] Sucesso nos últimos {WINDOW_SIZE}: {recent_success:.2f}")
-
-    if recent_success > SUCCESS_THRESHOLD and mean_steps < MAX_MEAN:
-        mean_steps = min(mean_steps * GROWTH, MAX_MEAN)
-        print(f"↑ Aumentando mean_steps para {int(mean_steps)}")
-    elif recent_success < 0.3 and mean_steps > INITIAL_MEAN:
-        mean_steps = max(mean_steps * 0.9, INITIAL_MEAN)
-        print(f"↓ Reduzindo mean_steps para {int(mean_steps)}")
-
-    if mean_steps >= MAX_MEAN:
-        print("🎯 Curriculum finalizado com sucesso!")
-        break
-
-    # Salva o modelo após cada rodada de currículo
-    os.makedirs("models", exist_ok=True)
-    model_path = f"models/freitas/dqn_agent_{int(mean_steps)}.pth"
-    agent.save(model_path)
-    print(f"[✓] Modelo salvo em {model_path}")
+def main():
+    setup_directories()
+    if USE_PYGAME:
+        screen, font = init_screen()
+    env, agent = initialize_environment_and_agent()
+    curriculum_loop(env, agent)
+    if USE_PYGAME:
+        pygame.quit()
 
 
-# ------------------ Gráficos ------------------
-def moving_average(data, window=50):
-    return np.convolve(data, np.ones(window) / window, mode="valid")
-
-plt.figure(figsize=(10, 4))
-plt.plot(moving_average(success_history), label="Média móvel (sucesso)", linewidth=2)
-plt.title("Taxa de Sucesso por Episódio")
-plt.xlabel("Episódio")
-plt.ylabel("Taxa de sucesso")
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.savefig("success_moving_average.png")
-
-plt.figure(figsize=(10, 4))
-plt.plot(tile_ratio_history, label="% Tiles coletados", alpha=0.6)
-plt.hlines(np.mean(tile_ratio_history), 0, len(tile_ratio_history), colors='red', linestyles='dashed', label="Média total")
-plt.title("Porcentagem de Tiles Coletados por Episódio")
-plt.xlabel("Episódio")
-plt.ylabel("Proporção")
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.savefig("tile_ratio_per_episode.png")
-
-if USE_PYGAME:
-    pygame.quit()
+if __name__ == "__main__":
+    main()

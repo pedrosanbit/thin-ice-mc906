@@ -13,19 +13,27 @@ class LevelGenerator:
     GRID_LENGTH = 19
     MAX_ATTEMPTS = 20
 
-    def __init__(self, mean_steps: int, std_ratio: float = 0.2):
-        """
-        mean_steps: número médio de passos esperados
-        std_ratio: desvio padrão em relação à média (ex: 0.2 => 20%)
-        """
+    def __init__(self, mean_steps: int, std_steps: float = 0.2):
         self.mean_steps = mean_steps
-        self.std_steps = max(1, int(std_ratio * mean_steps))  # evita std = 0
+        self.std_steps= std_steps
+
+    def add_single_coin_bag(self, grid, start) -> List[Tuple[int, int]]:
+        """Adiciona exatamente um saco de moedas em uma célula válida (não WALL, START ou FINISH)."""
+        sx, sy = start
+        candidates = []
+        for y in range(self.GRID_HEIGHT):
+            for x in range(self.GRID_LENGTH):
+                if (x, y) == (sx, sy):
+                    continue
+                if grid[y][x] in (Map.WALL.value, Map.FINISH.value):
+                    continue
+                candidates.append((x, y))
+        return [random.choice(candidates)] if candidates else []
 
     def _random_walk(self, use_uniform=False) -> Tuple[List[List[int]], Tuple[int, int], int]:
         grid = [[Map.WALL.value for _ in range(self.GRID_LENGTH)]
                 for _ in range(self.GRID_HEIGHT)]
 
-        # coloca o ponto final
         fy = random.randint(0, self.GRID_HEIGHT - 1)
         fx = random.randint(0, self.GRID_LENGTH - 1)
         grid[fy][fx] = Map.FINISH.value
@@ -41,42 +49,73 @@ class LevelGenerator:
                 1, 300
             ))
 
+        DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # R, D, L, U
+        dir_idx = random.randint(0, 3)  # direção inicial aleatória
+
+        path = [(cy, cx)]  # salva o caminho principal
+
         while steps <= max_steps:
-            dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            probs = [0.0] * 4
+            probs[dir_idx] = 0.4
+            probs[(dir_idx + 1) % 4] = 0.25
+            probs[(dir_idx - 1) % 4] = 0.25
+            probs[(dir_idx + 2) % 4] = 0.1
+
+
+            # Normaliza para evitar erros
+            total = sum(probs)
+            probs = [p / total for p in probs]
+
+            # Testa opções viáveis com as chances acima
             options = []
-            for dy, dx in dirs:
+            for i, (dy, dx) in enumerate(DIRECTIONS):
                 ny, nx = cy + dy, cx + dx
-                if not (0 <= ny < self.GRID_HEIGHT and 0 <= nx < self.GRID_LENGTH):
-                    continue
-                tile = grid[ny][nx]
-                if tile in (Map.FINISH.value, Map.THICK_ICE.value):
-                    continue
-                options.append((ny, nx))
+                if 0 <= ny < self.GRID_HEIGHT and 0 <= nx < self.GRID_LENGTH:
+                    tile = grid[ny][nx]
+                    if tile not in (Map.FINISH.value, Map.THICK_ICE.value):
+                        options.append((i, ny, nx))
 
             if not options:
                 break
 
-            cy, cx = random.choice(options)
+            # Escolhe a próxima direção com peso
+            indices = [i for (i, _, _) in options]
+            weights = [probs[i] for i in indices]
+            chosen = random.choices(options, weights=weights, k=1)[0]
+            dir_idx, cy, cx = chosen
+
             if grid[cy][cx] == Map.WALL.value:
                 grid[cy][cx] = Map.THIN_ICE.value
             elif grid[cy][cx] == Map.THIN_ICE.value:
                 grid[cy][cx] = Map.THICK_ICE.value
 
+            path.append((cy, cx))
             steps += 1
+
+        # 🔁 Injeção opcional de bifurcação
+        if len(path) > 4 and random.random() < 0.5:
+            by, bx = path[len(path)//2]
+            for dy, dx in DIRECTIONS:
+                ny, nx = by + dy, bx + dx
+                if 0 <= ny < self.GRID_HEIGHT and 0 <= nx < self.GRID_LENGTH:
+                    if grid[ny][nx] == Map.WALL.value:
+                        grid[ny][nx] = Map.THIN_ICE.value
 
         start = (cx, cy)
         return grid, start, [], [], [], [], steps
 
 
-    def build_random_levels(self, total_levels: int, output_folder=None) -> str:
+    def build_random_levels(self, total_levels: int, output_folder=None, extra_levels: int = 0) -> str:
         if output_folder is None:
-            output_folder = f"mean_{self.mean_steps:04}"
+            output_folder = f"procedural_generated/mean_{self.mean_steps:04}"
 
-        indices = list(range(total_levels))
-        random.shuffle(indices)  # embaralha a ordem dos índices
+
+        total_to_generate = total_levels + extra_levels
+        indices = list(range(total_to_generate))
+        random.shuffle(indices)
 
         for idx_pos, idx in enumerate(indices):
-            use_uniform = (idx_pos >= total_levels // 2)  # metade normal, metade uniforme
+            use_uniform = (idx_pos >= total_levels // 2)
             success, tries = False, 0
 
             while not success and tries < self.MAX_ATTEMPTS:
@@ -90,11 +129,11 @@ class LevelGenerator:
                 if grid[sy][sx] == Map.THICK_ICE.value:
                     continue
 
-                encode_levels_to_txt(output_folder, idx, grid, start, coin_bags, keys, blocks, teleports, steps)
-                print(f"[INFO] Fase {idx:04} gerada com {steps} passos. {'(uniforme)' if use_uniform else '(normal)'}")
-                success = True
+                # 🎯 50% de chance de adicionar um saco de moedas
+                if random.random() < 0.5:
+                    coin_bags = self.add_single_coin_bag(grid, start)
 
-            if not success:
-                print(f"[ERRO] Nível {idx} falhou após {self.MAX_ATTEMPTS} tentativas.")
+                encode_levels_to_txt(output_folder, idx, grid, start, coin_bags, keys, blocks, teleports, steps)
+                success = True
 
         return output_folder

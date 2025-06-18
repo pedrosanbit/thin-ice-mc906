@@ -195,6 +195,10 @@ def get_level(folder, index):
                 row.append(map_enum.value)
             grid.append(row)
 
-        #return Level(grid, start, coin_bags, keys, blocks, teleports, total_tiles)
+        # Substitui todos os blocos EMPTY por WALL
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                if grid[i][j] == Map.EMPTY.value:
+                    grid[i][j] = Map.WALL.value
+
         return grid, start, coin_bags, keys, blocks, teleports
-    
