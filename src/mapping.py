@@ -1,5 +1,10 @@
 from enum import Enum
 
+
+GRID_HEIGHT = 15
+GRID_WIDTH = 19
+CELL_SIZE = 32
+
 class Map(Enum):
     EMPTY = 0
     WALL = 1
@@ -32,7 +37,7 @@ char_to_level_map = {
 }
 
 level_map_to_char = {
-    Map.EMPTY: '0',
+    Map.WALL: '0',
     Map.WALL: '1',
     Map.THIN_ICE: '2',
     Map.THICK_ICE: '3',

@@ -9,14 +9,25 @@ from src.level_generator.save import *
 from src.level_generator.actions import *
 from src.level_generator.drawing import *
 
+
+def _delta_from_relative(creator, rel):
+    """
+    Converte a tecla relativa para (dx, dy) absoluto
+    rel =  0 → frente   (UP)
+    rel = -1 → esquerda (LEFT)
+    rel =  1 → direita  (RIGHT)
+    rel =  2 → trás     (DOWN)
+    """
+    new_idx = (creator.dir_idx + rel) % 4
+    return DIRS[new_idx], new_idx
+
 def apply_action(creator, action):
-    if action == MOVE_UP:
-        try_move(creator, 0, -1)
-    elif action == MOVE_DOWN:
-        try_move(creator, 0, 1)
-    elif action == MOVE_LEFT:
-        try_move(creator, -1, 0)
-    elif action == MOVE_RIGHT:
+    if action in (MOVE_UP, MOVE_LEFT, MOVE_RIGHT, MOVE_DOWN):
+        rel = {MOVE_UP: 0, MOVE_LEFT: -1, MOVE_RIGHT: 1, MOVE_DOWN: 2}[action]
+        (dx, dy), new_idx = _delta_from_relative(creator, rel)
+        moved = try_move(creator, dx, dy)
+        if moved:
+            creator.dir_idx = new_idx
         try_move(creator, 1, 0)
     elif action == PLACE_COIN:
         add_coin(creator)
@@ -40,16 +51,23 @@ def apply_action(creator, action):
 
 def try_move(creator, dx, dy):
     nx, ny = creator.player_x + dx, creator.player_y + dy
-    if not (0 <= nx < GRID_WIDTH and 0 <= ny < GRID_HEIGHT): return
-    if (nx, ny) == creator.original_start: return
-    if (nx, ny) in creator.forbidden_area: return
+    # verificação de limites, paredes, etc.
+    if not (0 <= nx < GRID_WIDTH and 0 <= ny < GRID_HEIGHT): 
+        return False
+    if (nx, ny) == creator.original_start or (nx, ny) in creator.forbidden_area:
+        return False
 
     current_val = creator.grid[ny][nx]
     if current_val == creator.Map.WALL.value:
         creator.grid[ny][nx] = creator.Map.THIN_ICE.value
     elif current_val == creator.Map.THIN_ICE.value:
         creator.grid[ny][nx] = creator.Map.THICK_ICE.value
-    elif current_val in (creator.Map.THICK_ICE.value, creator.Map.TELEPORT.value,
-                         creator.Map.COIN_BAG.value, creator.Map.LOCK.value):
-        return
+    elif current_val in (creator.Map.THICK_ICE.value, 
+                         creator.Map.TELEPORT.value,
+                         creator.Map.COIN_BAG.value, 
+                         creator.Map.LOCK.value):
+        return False
+
+    # movimento realizado
     creator.player_x, creator.player_y = nx, ny
+    return True

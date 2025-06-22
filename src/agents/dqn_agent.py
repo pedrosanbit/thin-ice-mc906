@@ -31,6 +31,8 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
+    def clear(self):  # ← ainda disponível, se quiser limpar tudo manualmente
+        self.buffer.clear()
 
 class DQNAgent:
     def __init__(
@@ -90,7 +92,8 @@ class DQNAgent:
         with torch.no_grad():
             q_values = self.policy_net(state_tensor)[0].cpu().numpy()
 
-        q_values[~action_mask] = -np.inf
+        if action_mask is not None:
+            q_values[~action_mask] = -np.inf
         return int(np.argmax(q_values))
 
     def remember(self, s, a, r, s_next, done):
@@ -135,4 +138,3 @@ class DQNAgent:
     def load(self, path):
         self.policy_net.load_state_dict(torch.load(path, map_location=self.device))
         self.target_net.load_state_dict(self.policy_net.state_dict())
-

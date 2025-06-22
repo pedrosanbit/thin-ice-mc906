@@ -12,18 +12,20 @@ class ThinIceEnv(gym.Env):
 
     ACTIONS = np.array([(0, -1), (1, 0), (0, 1), (-1, 0)])  # U, R, D, L
 
-#-    def __init__(self, level_index=None, level_folder="original_game", max_steps=300, render_mode=None):
-    def __init__(self, level_folder="original_game", level_index=0, max_steps=300, render_mode=None, seed = 42):
+    def __init__(self, level_folder="original_game", level_index=0, max_steps=300, render_mode=None, seed=42, allow_failure_progression=False):
         super().__init__()
         self.level_index = level_index
         self.level_folder = level_folder
         self.max_steps = max_steps
         self.render_mode = render_mode
         self.seed = seed
+        self.allow_failure_progression = allow_failure_progression
 
+        # Define os espaços de observação e ação esperados pelo Gymnasium
         C, H, W = len(Map), 15, 19
-        self.observation_space = gym.spaces.Box(0, 1, (C, H, W), np.float32)
-        self.action_space = gym.spaces.Discrete(len(self.ACTIONS))
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(C, H, W), dtype=np.float32)
+        self.action_space = gym.spaces.Discrete(4)
+
 
     def _init_game(self):
         if not hasattr(self, "game"):
@@ -52,52 +54,40 @@ class ThinIceEnv(gym.Env):
         obs = self._get_obs()
         info = {"action_mask": self._legal_mask()}
         return obs, info
-
+    
     def step(self, action: int):
-        """Aplica a ação, calcula recompensas e devolve (obs, reward, done, truncated, info)."""
         self.step_count += 1
         dx, dy = type(self).ACTIONS[action]
         prev_x, prev_y = self.game.player_x, self.game.player_y
-        prev_points = self.game.current_points
         prev_tiles = self.game.current_tiles
 
         self.game.move_player((dx, dy))
         new_pos = (self.game.player_x, self.game.player_y)
-        invalid = (prev_x, prev_y) == new_pos  
-        reward = 0
+        invalid = (prev_x, prev_y) == new_pos
 
-        # ---------- 2. Recompensas e Penalidades imediatas ----------
-        reward = 0.2 if not invalid else -0.05                    # custo do passo
-        if not invalid and new_pos not in self.visited:       # explorou tile novo
-            reward += 0.05
+        reward = -0.2 if invalid else -0.01 # penalidade leve por passo inválido
+
+        # 👇 Bonificação por explorar novo tile
+        if not invalid and new_pos not in self.visited:
             self.visited.add(new_pos)
-
-        # Recompensa por pontos coletados
-        if self.game.current_points > prev_points:
-            reward += (self.game.current_points - prev_points) * 0.01
-        if self.game.current_tiles  > prev_tiles:
             reward += 0.01
-            
-        # coleta de chaves
-        #if self.game.keys_obtained > self.game.level.start[2]:
-        #    reward += (self.game.keys_obtained - self.game.level.start[2]) * 0.1 
-        
-        # ---------- 3. Verifica término ou travamento ----------
+
+        # Recompensa por derretimento de blocos
+        if self.game.current_tiles > prev_tiles:
+            reward += (self.game.current_tiles - prev_tiles) * 0.1
+
         done = False
         result, score_ratio = self.game.check_progress()
-        # score_ratio float(self.current_tiles) / self.level.total_tiles
+
         if result == "SUCCESS":
-            #print(f"SUCESS: {1.0} {score_ratio}")
-            #reward += 1  # Grande recompensa por completar com sucesso
             reward += 1.0
             done = True
         elif result == "NOT_SUFFICIENT":
-            reward += 0.5 * score_ratio - 1.0
+            reward -= 0.1 * (1 - score_ratio)
             done = True
         elif result == "GAME_OVER":
-            reward -= 1.0 + (1 - score_ratio)
+            reward -= 0.5 + (1 - score_ratio)
             done = True
-            
 
         truncated = self.step_count >= self.max_steps
 
@@ -109,7 +99,16 @@ class ThinIceEnv(gym.Env):
             "level_id": self.game.level.current_level_id
         }
 
+        if (done or truncated) and self.allow_failure_progression:
+            self.game.load_next_level()
+
+        #if self.game.level.total_tiles > 20:
+        #    reward += np.random.normal(0, 0.01)  # média 0, desvio 0.01
+
         return self._get_obs(), reward, done, truncated, info
+
+
+    
 
 
     def _get_obs(self):
@@ -160,5 +159,6 @@ class ThinIceEnv(gym.Env):
             print(line)
         print()
 
-    def change_level_folder(self, new_folder):
+    def change_level_folder(self, new_folder, level_index = 0):
         self.level_folder = new_folder
+        self.level_index = level_index

@@ -188,3 +188,8 @@ data/levels/*
 # …nem nada do que estiver dentro dela
 !data/levels/validation_set/**
 
+
+# Arquivos grandes / resultados
+models/
+plots/
+

@@ -4,7 +4,7 @@ from pathlib import Path
 from src.env.thin_ice_env import ThinIceEnv
 from src.agents.dqn_agent import DQNAgent
 
-MODEL_PATH   = Path("models/dqn_final.pth")
+MODEL_PATH   = Path("models/freitas/dqn_agent_22.pth")
 LEVEL_FOLDER = "original_game"      # ou a pasta que quiser testar
 MAX_STEPS    = 300                  # igual ao treino
 
