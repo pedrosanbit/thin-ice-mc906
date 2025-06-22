@@ -2,7 +2,7 @@
  
 import os
 import numpy as np
-from src.env.thin_ice_env import ThinIceEnv
+from src.env.solver_env import SolverEnv
 from old_level_generator import LevelGenerator
 from src.utils import draw_game_screen
 from plot_utils import plot_batch_summary, save_round_summary_csv

@@ -1,7 +1,7 @@
 # src/scripts/try_solve.py
 import numpy as np
 from pathlib import Path
-from src.env.thin_ice_env import ThinIceEnv
+from src.env.solver_env import SolverEnv
 from src.agents.dqn_agent import DQNAgent
 
 MODEL_PATH   = Path("models/freitas/dqn_agent_22.pth")
@@ -10,7 +10,7 @@ MAX_STEPS    = 300                  # igual ao treino
 
 def main():
     # ambiente zerado
-    env   = ThinIceEnv(level_index=0, level_folder=LEVEL_FOLDER)
+    env   = SolverEnv(level_index=0, level_folder=LEVEL_FOLDER)
     agent = DQNAgent(
         state_shape=env.observation_space.shape,
         n_actions=env.action_space.n,

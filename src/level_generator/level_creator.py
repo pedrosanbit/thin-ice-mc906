@@ -1,7 +1,6 @@
-# src/level_generation/level_creator.py
+# src/level_generation/level_generator.py
 
 import pygame
-import random
 from src.mapping import *
 from src.utils import init_screen
 from src.level_generator.drawing import *
@@ -32,7 +31,6 @@ class LevelCreator:
         self.lock_placed = False
         self.coin_placed = False
         self.key_placed = False
-        self.dir_idx = random.randint(0, 3)
 
     def _get_random_start(self):
         import random

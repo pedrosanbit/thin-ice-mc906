@@ -2,7 +2,7 @@
 
 import os
 import numpy as np
-from src.env.thin_ice_env import ThinIceEnv
+from src.env.solver_env import SolverEnv
 from old_level_generator import LevelGenerator
 from src.agents.dqn_agent import DQNAgent
 
@@ -20,7 +20,7 @@ def validate_on_original_game(agent, use_action_mask, max_steps=300):
     )
     successes = 0
     for i, _ in enumerate(files):
-        env = ThinIceEnv(
+        env = SolverEnv(
             level_folder=folder_name,
             level_index=i,
             max_steps=max_steps,
@@ -44,7 +44,7 @@ def initialize_environment_and_agent(
     allow_failure_progression: bool,
     use_action_mask: bool = True
 ):
-    env = ThinIceEnv(
+    env = SolverEnv(
         level_folder="original_game",
         level_index=0,
         max_steps=steps_per_episode,

@@ -1,4 +1,4 @@
-# src/script.py
+# src/script/create_level.py
 
 from src.level_generator.level_creator import LevelCreator
 
