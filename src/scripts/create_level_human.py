@@ -1,6 +1,7 @@
 # src/script/create_level.py
 
-from src.level_generator.level_creator import LevelCreator
+from src.level_generator import LevelCreatorHuman
+
 
 def main():
     print("[*] Inicializando editor de fases Thin Ice...")
@@ -13,7 +14,7 @@ def main():
     print(" ENTER - Finalizar e salvar fase")
     print(" ESC   - Cancelar e sair")
 
-    editor = LevelCreator()
+    editor = LevelCreatorHuman()
     editor.run()
 
 if __name__ == "__main__":

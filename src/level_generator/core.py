@@ -1,4 +1,4 @@
-# src/level_generator/human_interface.py
+# src/level_generation/core.py
 
 import pygame
 from src.mapping import *
@@ -11,7 +11,7 @@ from src.level_generator.validation import *
 from src.level_generator.save import *
 from src.level_generator.actions import *
 
-class LevelCreator:
+class LevelCore:
     def __init__(self):
         self.Map = Map
         self.screen, self.font = init_screen()

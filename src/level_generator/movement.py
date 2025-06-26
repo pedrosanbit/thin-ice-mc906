@@ -38,18 +38,24 @@ def apply_action(creator, action):
     return True
 
 
-def try_move(creator, dx, dy):
+def try_move(creator, dx, dy) -> bool:
     nx, ny = creator.player_x + dx, creator.player_y + dy
-    if not (0 <= nx < GRID_WIDTH and 0 <= ny < GRID_HEIGHT): return
-    if (nx, ny) == creator.original_start: return
-    if (nx, ny) in creator.forbidden_area: return
+
+    if not (0 <= nx < GRID_WIDTH and 0 <= ny < GRID_HEIGHT):
+        return False
+    if (nx, ny) == creator.original_start or (nx, ny) in creator.forbidden_area:
+        return False
 
     current_val = creator.grid[ny][nx]
+
     if current_val == creator.Map.WALL.value:
         creator.grid[ny][nx] = creator.Map.THIN_ICE.value
     elif current_val == creator.Map.THIN_ICE.value:
         creator.grid[ny][nx] = creator.Map.THICK_ICE.value
-    elif current_val in (creator.Map.THICK_ICE.value, creator.Map.TELEPORT.value,
-                         creator.Map.COIN_BAG.value, creator.Map.LOCK.value):
-        return
+    elif current_val in (
+            creator.Map.THICK_ICE.value, creator.Map.TELEPORT.value,
+            creator.Map.COIN_BAG.value, creator.Map.LOCK.value):
+        return False
+
     creator.player_x, creator.player_y = nx, ny
+    return True
