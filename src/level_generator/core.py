@@ -12,7 +12,8 @@ from src.level_generator.save import *
 from src.level_generator.actions import *
 
 class LevelCore:
-    def __init__(self):
+    def __init__(self, load_folder = 'custom_created'):
+        self.load_folder = load_folder
         self.Map = Map
         self.screen, self.font = init_screen()
         self.grid = [[Map.WALL.value for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
@@ -74,4 +75,4 @@ class LevelCore:
             draw_level(self)
 
 if __name__ == "__main__":
-    LevelCreator().run()
+    LevelCore().run()

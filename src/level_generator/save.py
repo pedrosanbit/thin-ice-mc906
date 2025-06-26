@@ -34,7 +34,7 @@ def save_level(creator):
         print("[!] Tile atual não é válido para salvar a fase.")
         return
 
-    folder = "custom_created"
+    folder = creator.load_folder
     os.makedirs(os.path.join("data", "levels", folder), exist_ok=True)
     index = len(os.listdir(os.path.join("data", "levels", folder)))
     total_tiles = sum([row.count(creator.Map.THIN_ICE.value) for row in creator.grid])

@@ -1,4 +1,4 @@
-# src/level_generator/human_iface.py
+# src/level_generator/ai_iface.py
 
 import pygame
 from src.mapping import *
@@ -13,6 +13,9 @@ from .core import LevelCore
 from .movement import *
 
 class LevelCreatorEnv(LevelCore):
+    def __init__(self, load_folder = 'custom_created_agent'):
+        super().__init__(load_folder)
+
     ACTIONS = (
         MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT,
         PLACE_COIN, PLACE_KEY, PLACE_LOCK, PLACE_TELEPORT,
@@ -25,7 +28,7 @@ class LevelCreatorEnv(LevelCore):
         action = self.ACTIONS[action_idx]
         valid = apply_action(self, action)
         if pygame.display.get_init():
-            draw_level(self)      
+            draw_level(self)
         return valid
 
     def reset(self):

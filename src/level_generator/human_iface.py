@@ -9,6 +9,9 @@ from .core import LevelCore
 from .movement import *
 
 class LevelCreatorHuman(LevelCore):
+    def __init__(self, load_folder = 'custom_created_human'):
+        super().__init__(load_folder)
+
     def run(self):
         running = True
         clock = pygame.time.Clock()
